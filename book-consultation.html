@@ -25,15 +25,23 @@
   </div>
 </header>
 
-<section style="background:var(--ink-green);padding:56px 0 40px;">
+<section class="book-hero">
   <div class="wrap">
-    <div class="eyebrow">Clinical care when you're ready</div>
-    <h1 style="color:var(--cream);font-size:40px;">Book a Consultation with Dr. Thomas's team</h1>
-    <p style="color:var(--text-on-dark);max-width:640px;margin:12px 0 0;">A focused, one-on-one consultation — choose your area of care, tell us about your situation, and pick a time. Telehealth available nationwide; in-person available in Atlanta, GA.</p>
+    <div class="book-hero-inner">
+      <div class="eyebrow">Clinical care when you're ready</div>
+      <h1>Book a Consultation with Dr. Thomas's team</h1>
+      <p>A focused, one-on-one consultation — choose your area of care, tell us about your situation, and pick a time.</p>
+      <div class="book-hero-badges">
+        <span>📍 In-person — Atlanta, GA</span>
+        <span>💻 Telehealth — nationwide</span>
+        <span>🩺 Led by Dr. Ivanah Thomas</span>
+      </div>
+    </div>
   </div>
 </section>
 
-<div class="wrap book-shell">
+<div class="wrap book-page-wrap book-shell">
+ <div class="book-card-shell">
 
   <div class="book-progress" id="progress">
     <div class="step active" data-idx="1"><span class="dot">1</span><span class="label">Service</span></div>
@@ -52,8 +60,10 @@
 
       <!-- STEP 1: choose service -->
       <div class="step-panel active" data-step="1">
-        <h2 style="font-size:24px;margin-bottom:6px;">What would you like to discuss?</h2>
-        <p style="margin-bottom:24px;">Choose the area closest to your needs — your intake questions will adjust accordingly.</p>
+        <div class="book-step-heading">
+          <h2>What would you like to discuss?</h2>
+          <p>Choose the area closest to your needs — your intake questions will adjust accordingly.</p>
+        </div>
 
         <label class="service-pick">
           <input type="radio" name="service" value="hormone-bhrt" checked>
@@ -94,8 +104,10 @@
 
       <!-- STEP 2: your info + dynamic intake -->
       <div class="step-panel" data-step="2">
-        <h2 style="font-size:24px;margin-bottom:6px;">Tell us about yourself</h2>
-        <p style="margin-bottom:24px;">This helps Dr. Thomas's team prepare for your consultation.</p>
+        <div class="book-step-heading">
+          <h2>Tell us about yourself</h2>
+          <p>This helps Dr. Thomas's team prepare for your consultation.</p>
+        </div>
         <div class="form-panel">
           <div class="field-row">
             <div class="field"><label for="f-name">Full name</label><input id="f-name" required placeholder="Jane Doe"><div class="err-text">Please enter your name.</div></div>
@@ -126,8 +138,10 @@
 
       <!-- STEP 3: payment -->
       <div class="step-panel" data-step="3">
-        <h2 style="font-size:24px;margin-bottom:6px;">Consultation fee</h2>
-        <p style="margin-bottom:24px;">A flat $500 consultation fee reserves your appointment with Dr. Thomas's team.</p>
+        <div class="book-step-heading">
+          <h2>Consultation fee</h2>
+          <p>A flat $500 consultation fee reserves your appointment with Dr. Thomas's team.</p>
+        </div>
         <div class="form-panel">
           <div class="card-brand-row">
             <span style="font-size:13px;color:var(--text-muted);">We accept</span>
@@ -158,8 +172,10 @@
 
       <!-- STEP 4: schedule -->
       <div class="step-panel" data-step="4">
-        <h2 style="font-size:24px;margin-bottom:6px;">Pick a date &amp; time</h2>
-        <p style="margin-bottom:24px;">All times shown in Eastern Time (Atlanta, GA).</p>
+        <div class="book-step-heading">
+          <h2>Pick a date &amp; time</h2>
+          <p>All times shown in Eastern Time (Atlanta, GA).</p>
+        </div>
         <div class="form-panel">
           <div class="field">
             <label for="f-date">Preferred date</label>
@@ -208,7 +224,7 @@
         </div>
       </div>
 
-      <div class="step-nav" id="step-nav" style="display:flex;justify-content:space-between;margin-top:28px;">
+      <div class="step-nav" id="step-nav" style="display:flex;justify-content:space-between;">
         <button type="button" id="back-btn" class="btn btn-outline-dark">Back</button>
         <button type="button" id="next-btn" class="btn btn-primary">Continue</button>
       </div>
@@ -224,6 +240,7 @@
       <div class="summary-total"><span style="color:var(--text-on-dark);">Consultation fee</span><span class="amt">$500</span></div>
     </aside>
   </div>
+ </div>
 </div>
 
 <footer>
