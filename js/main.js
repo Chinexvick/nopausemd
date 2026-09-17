@@ -67,6 +67,8 @@ document.addEventListener('DOMContentLoaded', function () {
   initBookingModal();
   initProductCheckout();
   showPaymentReturnBanner();
+  initContactModal();
+  initLiveChat();
 });
 
 /* =========================================================
@@ -495,4 +497,215 @@ function initProductCheckout() {
         });
     });
   }
+}
+
+/* =========================================================
+   Contact form modal — writes to contact_messages via
+   submit_contact_message(), visible to the admin dashboard
+   the moment it's sent (Realtime + the green nav dot).
+   ========================================================= */
+function initContactModal() {
+  var triggers = document.querySelectorAll('[data-contact-open]');
+  if (!triggers.length) return;
+
+  var overlay = document.createElement('div');
+  overlay.className = 'booking-overlay';
+  overlay.id = 'contact-us';
+  overlay.innerHTML =
+    '<div class="booking-modal" role="dialog" aria-modal="true">' +
+      '<button type="button" class="booking-close" data-contact-close aria-label="Close">&times;</button>' +
+      '<p class="booking-eyebrow">Get in Touch</p>' +
+      '<h3 class="booking-title">Contact CliniPause</h3>' +
+      '<p class="booking-sub">Send us a message and our team will get back to you shortly.</p>' +
+      '<form id="contact-form">' +
+        '<div class="booking-row-2">' +
+          '<div class="booking-field"><label>Full name</label><input type="text" name="name" required></div>' +
+          '<div class="booking-field"><label>Phone (optional)</label><input type="tel" name="phone"></div>' +
+        '</div>' +
+        '<div class="booking-field"><label>Email</label><input type="email" name="email" required></div>' +
+        '<div class="booking-field"><label>Subject</label><input type="text" name="subject" placeholder="What is this about?"></div>' +
+        '<div class="booking-field"><label>Message</label><textarea name="message" rows="4" required style="border:1.5px solid var(--neutral-n30);border-radius:12px;padding:12px 14px;font-size:15px;font-family:var(--font-sans);width:100%;resize:vertical;"></textarea></div>' +
+        '<p class="booking-error" id="contact-error">Please fill in your name, email, and message.</p>' +
+        '<div class="booking-actions" style="justify-content:flex-end;">' +
+          '<button type="submit" class="btn btn-primary" id="contact-submit-btn">Send Message</button>' +
+        '</div>' +
+      '</form>' +
+    '</div>';
+  document.body.appendChild(overlay);
+
+  function open() { overlay.classList.add('open'); document.body.style.overflow = 'hidden'; }
+  function close() { overlay.classList.remove('open'); document.body.style.overflow = ''; }
+
+  triggers.forEach(function (t) {
+    t.addEventListener('click', function (e) { e.preventDefault(); open(); });
+  });
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay || e.target.hasAttribute('data-contact-close')) close();
+  });
+
+  document.getElementById('contact-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var fd = new FormData(e.target);
+    var name = (fd.get('name') || '').trim();
+    var email = (fd.get('email') || '').trim();
+    var message = (fd.get('message') || '').trim();
+    var errEl = document.getElementById('contact-error');
+
+    if (!name || !email || !message) { errEl.classList.add('show'); return; }
+    errEl.classList.remove('show');
+
+    var btn = document.getElementById('contact-submit-btn');
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+
+    supabaseRpc('submit_contact_message', {
+      p_site: STOREFRONT_SITE,
+      p_name: name,
+      p_email: email,
+      p_phone: (fd.get('phone') || '').trim() || null,
+      p_subject: (fd.get('subject') || '').trim() || null,
+      p_message: message
+    }).then(function () {
+      e.target.innerHTML = '<div class="booking-success"><div class="checkmark">&check;</div>' +
+        '<h3 class="booking-title">Message Sent</h3>' +
+        '<p class="booking-sub">Thanks, ' + name.split(' ')[0] + ' — we\'ll get back to you soon.</p>' +
+        '<button type="button" class="btn btn-primary" id="contact-done" style="margin-top:10px;">Done</button></div>';
+      document.getElementById('contact-done').addEventListener('click', close);
+    }).catch(function (err) {
+      errEl.textContent = err.message || 'Something went wrong. Please try again.';
+      errEl.classList.add('show');
+      btn.disabled = false;
+      btn.textContent = 'Send Message';
+    });
+  });
+}
+
+/* =========================================================
+   Live chat widget — a floating bubble that opens a small
+   panel. No visitor login: a random token is kept in
+   localStorage to identify "this browser's" conversation,
+   checked server-side by every RPC call. Polls for replies
+   while open; the admin side gets true Realtime + a nav dot.
+   ========================================================= */
+function initLiveChat() {
+  var TOKEN_KEY = 'clinipause_chat_token';
+  var CONV_KEY = 'clinipause_chat_conversation';
+  var pollTimer = null;
+
+  function getToken() {
+    var token = localStorage.getItem(TOKEN_KEY);
+    if (!token) {
+      token = 'v_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 12) + Math.random().toString(36).slice(2, 12);
+      localStorage.setItem(TOKEN_KEY, token);
+    }
+    return token;
+  }
+
+  var bubble = document.createElement('button');
+  bubble.type = 'button';
+  bubble.id = 'chat-bubble';
+  bubble.setAttribute('aria-label', 'Open live chat');
+  bubble.innerHTML = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+  document.body.appendChild(bubble);
+
+  var panel = document.createElement('div');
+  panel.id = 'chat-panel';
+  panel.innerHTML =
+    '<div class="chat-panel-header">' +
+      '<span>Chat with CliniPause</span>' +
+      '<button type="button" id="chat-panel-close" aria-label="Close chat">&times;</button>' +
+    '</div>' +
+    '<div class="chat-panel-body" id="chat-panel-body">' +
+      '<div class="chat-panel-intro">' +
+        '<p>Hi! Leave your name and a message and our team will reply here.</p>' +
+        '<form id="chat-intro-form">' +
+          '<input type="text" name="name" placeholder="Your name" required>' +
+          '<input type="email" name="email" placeholder="Your email (optional)">' +
+          '<textarea name="message" placeholder="How can we help?" rows="3" required></textarea>' +
+          '<button type="submit" class="btn btn-primary" style="width:100%;">Start Chat</button>' +
+        '</form>' +
+      '</div>' +
+      '<div class="chat-panel-messages" id="chat-panel-messages" style="display:none;"></div>' +
+    '</div>' +
+    '<form id="chat-panel-form" class="chat-panel-form" style="display:none;">' +
+      '<input type="text" id="chat-panel-input" placeholder="Type a message..." autocomplete="off">' +
+      '<button type="submit" aria-label="Send">&#10148;</button>' +
+    '</form>';
+  document.body.appendChild(panel);
+
+  function escapeHtml(str) {
+    return String(str == null ? '' : str).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function open() {
+    panel.classList.add('open');
+    var convId = localStorage.getItem(CONV_KEY);
+    if (convId) showThread(convId);
+  }
+  function close() {
+    panel.classList.remove('open');
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+  }
+
+  bubble.addEventListener('click', function () {
+    panel.classList.contains('open') ? close() : open();
+  });
+  document.getElementById('chat-panel-close').addEventListener('click', close);
+
+  document.getElementById('chat-intro-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var fd = new FormData(e.target);
+    var name = (fd.get('name') || '').trim();
+    var email = (fd.get('email') || '').trim();
+    var message = (fd.get('message') || '').trim();
+    if (!name || !message) return;
+
+    var submitBtn = e.target.querySelector('button');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Starting…';
+
+    supabaseRpc('start_chat_conversation', {
+      p_site: STOREFRONT_SITE, p_visitor_token: getToken(), p_visitor_name: name, p_visitor_email: email || null
+    }).then(function (convId) {
+      localStorage.setItem(CONV_KEY, convId);
+      return supabaseRpc('send_chat_message', { p_conversation_id: convId, p_visitor_token: getToken(), p_body: message });
+    }).then(function () {
+      showThread(localStorage.getItem(CONV_KEY));
+    }).catch(function () {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Start Chat';
+    });
+  });
+
+  function showThread(convId) {
+    document.querySelector('.chat-panel-intro').style.display = 'none';
+    document.getElementById('chat-panel-messages').style.display = 'flex';
+    document.getElementById('chat-panel-form').style.display = 'flex';
+    fetchMessages(convId);
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(function () { fetchMessages(convId); }, 3000);
+  }
+
+  function fetchMessages(convId) {
+    supabaseRpc('get_chat_messages', { p_conversation_id: convId, p_visitor_token: getToken() }).then(function (msgs) {
+      var box = document.getElementById('chat-panel-messages');
+      box.innerHTML = (msgs || []).map(function (m) {
+        return '<div class="chat-panel-bubble ' + (m.sender_is_admin ? 'from-admin' : 'from-visitor') + '">' + escapeHtml(m.body) + '</div>';
+      }).join('');
+      box.scrollTop = box.scrollHeight;
+    }).catch(function () { /* transient — next poll will retry */ });
+  }
+
+  document.getElementById('chat-panel-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var input = document.getElementById('chat-panel-input');
+    var body = input.value.trim();
+    var convId = localStorage.getItem(CONV_KEY);
+    if (!body || !convId) return;
+    input.value = '';
+    supabaseRpc('send_chat_message', { p_conversation_id: convId, p_visitor_token: getToken(), p_body: body })
+      .then(function () { fetchMessages(convId); });
+  });
 }
