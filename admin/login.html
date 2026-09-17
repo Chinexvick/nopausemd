@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Admin Login · CliniPauseMD</title>
+<link rel="stylesheet" href="css/style.css" />
+<style>
+  body { background: var(--bg); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+  .login-card {
+    width: 100%; max-width: 400px; background: var(--white); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 36px 32px; box-shadow: var(--shadow-card);
+  }
+  .login-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .login-logo .logo-dot { width: 16px; height: 16px; border-radius: 50%; background: var(--green); }
+  .login-logo span { font-family: var(--font-head); font-weight: 700; font-size: 22px; color: var(--green); }
+  .login-sub { color: var(--text-muted); font-size: 14px; margin: 0 0 28px; }
+  .login-field { margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px; }
+  .login-field label { font-size: 13px; font-weight: 600; color: var(--text-dark); }
+  .login-field input {
+    border: 1.5px solid var(--border); border-radius: var(--radius-sm); padding: 11px 14px;
+    font-size: 14px; font-family: var(--font-body); width: 100%;
+  }
+  .login-field input:focus { outline: none; border-color: var(--green); }
+  .login-error {
+    display: none; background: var(--red-bg); color: #a12626; font-size: 13px;
+    padding: 10px 14px; border-radius: var(--radius-sm); margin-bottom: 16px;
+  }
+  .login-error.show { display: block; }
+  .login-submit {
+    width: 100%; background: var(--green); color: #fff; border: none; border-radius: var(--radius-sm);
+    padding: 12px; font-size: 14px; font-weight: 600; cursor: pointer;
+  }
+  .login-submit:disabled { opacity: 0.7; cursor: not-allowed; }
+  .login-note { text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 20px; }
+</style>
+</head>
+<body>
+
+<div class="login-card">
+  <div class="login-logo"><span class="logo-dot"></span><span>CliniPauseMD</span></div>
+  <p class="login-sub">Sign in to the admin dashboard. Accounts are provisioned by the team — there is no self-signup.</p>
+
+  <p class="login-error" id="login-error">Incorrect email or password.</p>
+
+  <form id="login-form">
+    <div class="login-field">
+      <label>Email</label>
+      <input type="email" name="email" autocomplete="username" required>
+    </div>
+    <div class="login-field">
+      <label>Password</label>
+      <input type="password" name="password" autocomplete="current-password" required>
+    </div>
+    <button type="submit" class="login-submit" id="login-submit">Sign In</button>
+  </form>
+
+  <p class="login-note">CliniPauseMD internal admin access only.</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script>
+(function () {
+  var params = new URLSearchParams(location.search);
+  var errorEl = document.getElementById('login-error');
+
+  if (params.get('reason') === 'not_admin') {
+    errorEl.textContent = 'That account does not have admin access to this dashboard.';
+    errorEl.classList.add('show');
+  }
+
+  if (typeof sb === 'undefined') {
+    errorEl.textContent = 'Could not load the sign-in service. Check your connection and reload the page.';
+    errorEl.classList.add('show');
+    document.getElementById('login-submit').disabled = true;
+    return;
+  }
+
+  // Already signed in and confirmed admin? Skip straight past login.
+  sb.auth.getSession().then(function (result) {
+    var session = result.data && result.data.session;
+    if (!session) return;
+    sb.from('store_admins').select('id').eq('id', session.user.id).maybeSingle().then(function (res) {
+      if (res.data) location.replace(params.get('next') || 'overview.html');
+    });
+  }).catch(function () { /* ignore — user can still sign in manually */ });
+
+  document.getElementById('login-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var fd = new FormData(e.target);
+    var email = (fd.get('email') || '').trim();
+    var password = fd.get('password') || '';
+    var submitBtn = document.getElementById('login-submit');
+
+    errorEl.classList.remove('show');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Signing in…';
+
+    sb.auth.signInWithPassword({ email: email, password: password }).then(function (result) {
+      if (result.error || !result.data.session) throw new Error('bad_credentials');
+      return sb.from('store_admins').select('id').eq('id', result.data.session.user.id).maybeSingle();
+    }).then(function (res) {
+      if (!res || !res.data) {
+        return sb.auth.signOut().then(function () {
+          errorEl.textContent = 'That account does not have admin access to this dashboard.';
+          errorEl.classList.add('show');
+        });
+      }
+      location.replace(params.get('next') || 'overview.html');
+    }).catch(function () {
+      errorEl.textContent = 'Incorrect email or password.';
+      errorEl.classList.add('show');
+    }).finally(function () {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Sign In';
+    });
+  });
+})();
+</script>
+</body>
+</html>

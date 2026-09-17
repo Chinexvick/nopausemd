@@ -1,0 +1,9 @@
+{
+  "name": "nopausemd-site",
+  "private": true,
+  "version": "1.0.0",
+  "description": "CliniPause static site + Vercel serverless API (Stripe checkout + webhook).",
+  "dependencies": {
+    "stripe": "^17.4.0"
+  }
+}
