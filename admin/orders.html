@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en" class="auth-pending">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Orders · CliniPauseMD Admin</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <div class="sidebar-logo">
+        <span class="logo-dot"></span>
+        <span class="logo-text">CliniPauseMD</span>
+        <span class="admin-badge">ADMIN</span>
+      </div>
+      <div class="nav-group"><div class="nav-group-label">OPERATIONS</div><a class="nav-item" href="overview.html"><span class="dot"></span>Overview</a><a class="nav-item" href="#"><span class="dot"></span>Users</a><a class="nav-item" href="clinician-schedule.html"><span class="dot"></span>Clinicians</a><a class="nav-item" href="appointment-detail.html"><span class="dot"></span>Clinical Care</a></div><div class="nav-group"><div class="nav-group-label">CONTENT & KNOWLEDGE</div><a class="nav-item" href="content-bulk-actions.html"><span class="dot"></span>Content</a><a class="nav-item" href="evidence-library.html"><span class="dot"></span>Evidence Library</a><a class="nav-item" href="treatments.html"><span class="dot"></span>Treatments</a><a class="nav-item" href="supplement-library.html"><span class="dot"></span>Supplements</a><a class="nav-item" href="hormone-center.html"><span class="dot"></span>Hormones</a></div><div class="nav-group"><div class="nav-group-label">INTELLIGENCE</div><a class="nav-item" href="ai-dashboard.html"><span class="dot"></span>AI & Intelligence</a><a class="nav-item" href="assessments.html"><span class="dot"></span>Assessments</a><a class="nav-item" href="safety-rules.html"><span class="dot"></span>Safety & Rules</a></div><div class="nav-group"><div class="nav-group-label">BUSINESS</div><a class="nav-item" href="subscriptions.html"><span class="dot"></span>Subscriptions</a><a class="nav-item" href="analytics.html"><span class="dot"></span>Analytics</a><a class="nav-item" href="reports.html"><span class="dot"></span>Reports</a></div><div class="nav-group"><div class="nav-group-label">WEBSITE</div><a class="nav-item active" href="orders.html" data-nav-key="orders"><span class="dot"></span>Orders</a></div><div class="nav-group"><div class="nav-group-label">SYSTEM</div><a class="nav-item" href="notifications.html"><span class="dot"></span>Notifications</a><a class="nav-item" href="privacy-compliance.html"><span class="dot"></span>Privacy & Compliance</a><a class="nav-item" href="audit-log.html"><span class="dot"></span>Audit Log</a><a class="nav-item" href="system-health.html"><span class="dot"></span>System</a><a class="nav-item" href="admin-settings.html"><span class="dot"></span>Admin Settings</a></div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="avatar-circle">SC</div>
+      <div class="footer-meta">
+        <div class="name">Sarah Chen</div>
+        <div class="role">Super Admin</div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+
+    <header class="topbar">
+      <div class="search-input-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input class="search-input" type="text" id="order-search" placeholder="Search orders by name or email..." />
+      </div>
+      <div class="topbar-actions">
+        <button class="icon-btn" title="Notifications">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        </button>
+        <button class="icon-btn" title="Help">?</button>
+        <div class="topbar-divider"></div>
+        <div class="user-badge">
+          <span class="u-name">Sarah Chen</span>
+          <span class="u-role">Super Admin</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <div class="section-header">
+        <div>
+          <h1 class="page-title">Orders</h1>
+          <p class="page-subtitle"><span class="orders-live-dot"></span>Live consultation bookings and product orders from clinipausemd.com and drivanah.com.</p>
+        </div>
+        <div class="header-actions"><a class="btn btn-secondary" href="#" id="refresh-orders">Refresh</a></div>
+      </div>
+
+      <div class="kpi-strip">
+        <div class="kpi-card">
+          <div class="kpi-label">Paid (30 days)</div>
+          <div class="kpi-value" id="kpi-paid-count">–</div>
+          <div class="kpi-delta green"><span class="dot"></span><span id="kpi-paid-total">$0</span> collected</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Pending Payment</div>
+          <div class="kpi-value" id="kpi-pending-count">–</div>
+          <div class="kpi-delta amber"><span class="dot"></span>Not yet confirmed</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">CliniPauseMD.com</div>
+          <div class="kpi-value" id="kpi-site-clinipausemd">–</div>
+          <div class="kpi-delta blue"><span class="dot"></span>Paid orders</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">DrIvanah.com</div>
+          <div class="kpi-value" id="kpi-site-drivanah">–</div>
+          <div class="kpi-delta blue"><span class="dot"></span>Paid orders</div>
+        </div>
+      </div>
+
+      <div class="subnav-pills" id="order-filter-pills">
+        <span class="pill active" data-filter="all">All</span>
+        <span class="pill" data-filter="paid">Paid</span>
+        <span class="pill" data-filter="pending_payment">Pending</span>
+        <span class="pill" data-filter="booking">Consultations</span>
+        <span class="pill" data-filter="order">Product Orders</span>
+      </div>
+
+      <div class="card" style="padding:0;">
+        <div class="orders-table" id="orders-table">
+          <div class="orders-empty">Loading orders…</div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/auth-guard.js"></script>
+<script src="js/main.js"></script>
+<script src="js/orders.js"></script>
+</body>
+</html>
