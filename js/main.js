@@ -1,25 +1,34 @@
-// CliniPause — shared site behavior
 document.addEventListener('DOMContentLoaded', function () {
+  // Mobile nav toggle
   var toggle = document.querySelector('.nav-toggle');
-  var menu = document.querySelector('.mobile-menu');
-  if (toggle && menu) {
+  var links = document.querySelector('.nav-links');
+  if (toggle && links) {
     toggle.addEventListener('click', function () {
-      menu.classList.toggle('open');
-      toggle.setAttribute('aria-expanded', menu.classList.contains('open'));
+      links.classList.toggle('open');
     });
   }
 
-  // Simple "Add to cart" feedback (no real backend yet)
-  document.querySelectorAll('[data-add-to-cart]').forEach(function (btn) {
-    btn.addEventListener('click', function (e) {
-      e.preventDefault();
+  // FAQ accordion
+  document.querySelectorAll('.faq-item').forEach(function (item) {
+    var question = item.querySelector('.faq-question');
+    if (!question) return;
+    question.addEventListener('click', function () {
+      var wasOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item').forEach(function (i) {
+        i.classList.remove('open');
+      });
+      if (!wasOpen) item.classList.add('open');
+    });
+  });
+
+  // Add to cart / buy buttons — simple feedback
+  document.querySelectorAll('.product-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
       var original = btn.textContent;
       btn.textContent = 'Added ✓';
-      btn.disabled = true;
       setTimeout(function () {
         btn.textContent = original;
-        btn.disabled = false;
-      }, 1400);
+      }, 1500);
     });
   });
 });
