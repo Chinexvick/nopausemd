@@ -34,6 +34,46 @@
 
 html { scroll-behavior: smooth; }
 
+/* ---------- Animations ---------- */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Scroll-reveal: JS adds .reveal to elements as they enter the viewport
+   (see initScrollReveal in main.js). Elements start hidden only once JS
+   has confirmed it's running, so content never disappears if JS fails. */
+.js-reveal-ready [data-reveal] {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.js-reveal-ready [data-reveal].revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Hero content animates in immediately on page load. */
+.hero-fade-up {
+  opacity: 0;
+  animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .js-reveal-ready [data-reveal] { opacity: 1 !important; transform: none !important; transition: none !important; }
+  .hero-fade-up { animation: none !important; opacity: 1 !important; }
+  .btn, .nav-links a, .service-card, .approach-card, .topic-card, .product-card, .gallery-card, .split-image, .faq-question img {
+    transition: none !important;
+  }
+}
+
 html, body { max-width: 100%; overflow-x: hidden; }
 
 body {
@@ -99,7 +139,8 @@ ul { margin: 0; padding: 0; }
   white-space: nowrap;
 }
 
-.btn:hover { opacity: 0.92; }
+.btn:hover { opacity: 0.92; transform: translateY(-2px); box-shadow: 0 8px 18px rgba(0,0,0,0.12); }
+.btn:active { transform: translateY(0); box-shadow: none; }
 
 .btn-primary {
   background: var(--primary-p300);
@@ -163,10 +204,25 @@ ul { margin: 0; padding: 0; }
 }
 
 .nav-links a {
+  position: relative;
   transition: color 0.15s ease;
 }
 
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  width: 100%;
+  height: 2px;
+  background: var(--primary-p300);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.25s ease;
+}
+
 .nav-links a:hover { color: var(--primary-p300); }
+.nav-links a:hover::after { transform: scaleX(1); }
 
 .nav-toggle {
   display: none;
@@ -303,12 +359,21 @@ ul { margin: 0; padding: 0; }
   border-radius: var(--radius-lg);
   overflow: hidden;
   height: 300px;
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
 }
+
+.home-hero-gallery .gallery-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+}
+
+.home-hero-gallery .gallery-card:hover img { transform: scale(1.06); }
 
 .home-hero-gallery .gallery-card img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.5s ease;
 }
 
 /* ---------- Section Heading ---------- */
@@ -351,9 +416,18 @@ ul { margin: 0; padding: 0; }
   border-radius: var(--radius-lg);
   overflow: hidden;
   height: 400px;
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
 }
 
+.service-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+}
+
+.service-card:hover img { transform: scale(1.06); }
+
 .service-card img {
+  transition: transform 0.5s ease;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -405,7 +479,10 @@ ul { margin: 0; padding: 0; }
   justify-content: flex-start;
   gap: 18px;
   overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
+
+.approach-card:hover { transform: translateY(-6px); box-shadow: 0 16px 32px rgba(0,0,0,0.12); }
 
 .approach-card--light {
   background: var(--white);
@@ -462,7 +539,10 @@ ul { margin: 0; padding: 0; }
   display: flex;
   flex-direction: column;
   gap: 16px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
+
+.topic-card:hover { transform: translateY(-6px); box-shadow: 0 16px 32px rgba(0,0,0,0.12); }
 
 .topic-card--light {
   background: var(--white);
@@ -550,7 +630,10 @@ ul { margin: 0; padding: 0; }
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.5s ease;
 }
+
+.split-image:hover img { transform: scale(1.06); }
 
 .split-image--caption {
   position: relative;
@@ -643,7 +726,11 @@ ul { margin: 0; padding: 0; }
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
+
+.product-card:hover { transform: translateY(-6px); box-shadow: 0 16px 32px rgba(0,0,0,0.12); }
+.product-card:hover .product-image img { transform: scale(1.06); }
 
 .product-image {
   height: 260px;
@@ -658,6 +745,7 @@ ul { margin: 0; padding: 0; }
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 0.5s ease;
 }
 
 .product-body {
@@ -1232,6 +1320,7 @@ ul { margin: 0; padding: 0; }
   .footer-main { flex-direction: column; }
   .footer-links { gap: 32px; }
   .bundle-strip { flex-direction: column; align-items: flex-start; }
+  .logo-text { display: none; }
 }
 
 @media (max-width: 480px) {
