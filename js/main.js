@@ -69,7 +69,70 @@ document.addEventListener('DOMContentLoaded', function () {
   showPaymentReturnBanner();
   initContactModal();
   initLiveChat();
+  initHeroEntrance();
+  initScrollReveal();
 });
+
+/* =========================================================
+   Hero entrance animation — the first thing a visitor sees
+   fades/slides up in a quick stagger the moment the page loads.
+   ========================================================= */
+function initHeroEntrance() {
+  var groups = [
+    document.querySelectorAll('.home-hero-copy > *'),
+    document.querySelectorAll('.page-hero-content > *'),
+    document.querySelectorAll('.home-hero-gallery .gallery-card')
+  ];
+
+  groups.forEach(function (nodeList) {
+    Array.prototype.forEach.call(nodeList, function (el, i) {
+      el.classList.add('hero-fade-up');
+      el.style.animationDelay = (i * 0.1) + 's';
+    });
+  });
+
+  var heroImage = document.querySelector('.page-hero-image');
+  if (heroImage) {
+    heroImage.classList.add('hero-fade-up');
+    heroImage.style.animationDelay = '0.15s';
+  }
+}
+
+/* =========================================================
+   Scroll reveal — sections/cards fade up into place as they
+   enter the viewport. Falls back to fully visible content if
+   IntersectionObserver isn't available.
+   ========================================================= */
+function initScrollReveal() {
+  var selectors = [
+    '.section-head', '.service-card', '.approach-card', '.topic-card',
+    '.product-card', '.split-copy', '.split-image', '.feature-banner-image',
+    '.faq-item', '.bundle-strip'
+  ];
+  var targets = document.querySelectorAll(selectors.join(','));
+  if (!targets.length) return;
+
+  if (!('IntersectionObserver' in window)) {
+    targets.forEach(function (el) { el.setAttribute('data-reveal', ''); el.classList.add('revealed'); });
+    return;
+  }
+
+  document.documentElement.classList.add('js-reveal-ready');
+  targets.forEach(function (el) { el.setAttribute('data-reveal', ''); });
+
+  var observer = new IntersectionObserver(function (entries) {
+    entries.forEach(function (entry, i) {
+      if (entry.isIntersecting) {
+        var delay = (i % 3) * 0.08;
+        entry.target.style.transitionDelay = delay + 's';
+        entry.target.classList.add('revealed');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+
+  targets.forEach(function (el) { observer.observe(el); });
+}
 
 /* =========================================================
    Payment return banner — Stripe redirects back with
