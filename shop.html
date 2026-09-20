@@ -26,9 +26,9 @@
       <li><a href="programs.html">Programs</a></li>
       <li><a href="shop.html">Shop</a></li>
       <li><a href="book.html">Book</a></li>
-      <li><a href="mailto:CliniPause@gmail.com">Contact</a></li>
+      <li><a href="#contact-us" data-contact-open>Contact</a></li>
     </ul>
-    <a href="mailto:CliniPause@gmail.com" class="btn btn-primary nav-cta">
+    <a href="#book-consultation" data-book-open class="btn btn-primary nav-cta">
       <img src="assets/icons/icon-phone.svg" alt="">
       Book a Consultation
     </a>
@@ -43,60 +43,15 @@
       <p>Explore CliniPause products created or selected to support women's health and everyday wellbeing.</p>
     </div>
     <div class="page-hero-image">
-      <img src="assets/images/shop-hero.png" alt="CliniPause shop hero">
+      <img src="assets/images/shop-products-lifestyle.jpg" alt="CliniPause product line">
     </div>
   </div>
 </section>
 
 <section class="section">
   <div class="container">
-    <div class="product-grid">
-      <div class="product-card">
-        <div class="product-image"><img src="assets/images/shop-product-hot-flashes.png" alt="Hot Flashes Support"></div>
-        <div class="product-body">
-          <div class="badge-row">
-            <span class="badge badge-green">Hot Flashes Support</span>
-            <span class="badge badge-pink">30 Day Supply</span>
-          </div>
-          <h3>Hot Flashes Support</h3>
-          <p>Reduce hot flash frequency, support bone health, and improve overall wellbeing. Physician-formulated for peri-menopause.</p>
-          <div class="price-row"><span class="price-now">$49.99</span><span class="price-was">$56.00</span></div>
-          <button class="product-btn">Add to Cart</button>
-        </div>
-      </div>
-      <div class="product-card">
-        <div class="product-image"><img src="assets/images/shop-product-mood.png" alt="Mood Support"></div>
-        <div class="product-body">
-          <div class="badge-row">
-            <span class="badge badge-green">Mood Support</span>
-            <span class="badge badge-pink">30 Day Supply</span>
-          </div>
-          <h3>Mood Support</h3>
-          <p>Support mood and emotional stability, decrease night sweats, and relieve insomnia. Physician-formulated for peri-menopause.</p>
-          <div class="price-row"><span class="price-now">$49.99</span><span class="price-was">$55.00</span></div>
-          <button class="product-btn">Add to Cart</button>
-        </div>
-      </div>
-      <div class="product-card">
-        <div class="product-image" style="background:#0c211b;"><img src="assets/images/shop-product-handbook.png" alt="The NoPause Solution Handbook"></div>
-        <div class="product-body">
-          <div class="badge-row">
-            <span class="badge badge-tan">Book</span>
-            <span class="badge badge-teal">by Dr. Ivanah Thomas</span>
-          </div>
-          <h3>The NoPause Solution Handbook</h3>
-          <p>A comprehensive guide to navigating hot flashes, mood swings, brain fog, fatigue, and weight changes. Integrative menopause care, explained.</p>
-          <div class="price-row"><span class="price-now">$44.99</span><span class="price-was">$50.00</span></div>
-          <a href="book.html" class="btn product-btn" style="text-decoration:none;">Get the Book</a>
-        </div>
-      </div>
-    </div>
-    <div class="bundle-strip">
-      <div>
-        <h3>The Complete Midlife Wellness Bundle</h3>
-        <p>Both supplements + handbook. Save 15% when you bundle.</p>
-      </div>
-      <a href="#" class="bundle-cta">Shop the Bundle →</a>
+    <div class="product-grid" id="shop-product-grid">
+      <p style="grid-column:1/-1;text-align:center;color:var(--neutral-n200);">Loading products…</p>
     </div>
   </div>
 </section>
@@ -109,7 +64,7 @@
       <p>The service categories above follow the existing site's listed wellness programs, including hormone therapy, vaginal rejuvenation/O-Shot, aesthetics, weight loss plans, peptides, and menopause care.</p>
     </div>
     <div style="display:flex;justify-content:center;margin-bottom:40px;">
-      <a href="mailto:CliniPause@gmail.com" class="btn btn-primary">Book a Consultation</a>
+      <a href="#book-consultation" data-book-open class="btn btn-primary">Book a Consultation</a>
     </div>
     <div class="feature-banner-image">
       <img src="assets/images/shop-cta.png" alt="CliniPause shop">
@@ -118,6 +73,7 @@
 </section>
 
 <footer class="site-footer">
+  <div class="leaf-decoration leaf-decoration--footer" aria-hidden="true"><svg viewBox="0 0 100 100" fill="currentColor"><path d="M50 5C20 20 10 55 30 85c5-20 15-30 30-40C75 35 70 15 50 5z"/></svg></div>
   <div class="container">
     <div class="footer-main">
       <div class="footer-brand">
@@ -127,7 +83,6 @@
         </div>
         <p>Clinical Care. Natural Solutions. A Healthier You.</p>
         <p class="dim">Founded by Dr. Ivanah Thomas · Atlanta, GA</p>
-        <p>Atlanta, GA · Telehealth nationwide</p>
       </div>
       <div class="footer-links">
         <div class="footer-col">
@@ -136,7 +91,7 @@
           <a href="about.html">About</a>
           <a href="services.html">Services</a>
           <a href="shop.html">Shop</a>
-          <a href="mailto:CliniPause@gmail.com">Contact</a>
+          <a href="#contact-us" data-contact-open>Contact</a>
         </div>
         <div class="footer-col">
           <h4>Services</h4>
@@ -148,14 +103,12 @@
         </div>
         <div class="footer-col">
           <h4>Contact</h4>
-          <p>CliniPause@gmail.com</p>
-          <p>+1 312-555-4829</p>
-          <p>742 Evergreen Terrace, Springfield, IL</p>
+          <p>info@clinipause.com</p>
         </div>
         <div class="footer-col">
           <h4>Company</h4>
           <a href="about.html">About Dr. Thomas</a>
-          <a href="mailto:CliniPause@gmail.com">Contact Us</a>
+          <a href="#contact-us" data-contact-open>Contact Us</a>
           <a href="#">Privacy Policy</a>
           <a href="#">Terms of Service</a>
         </div>
