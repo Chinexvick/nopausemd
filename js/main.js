@@ -873,17 +873,22 @@ function initHeroVideo() {
   overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
   overlay.querySelector('.video-lightbox-close').addEventListener('click', close);
 
+  // youtube-nocookie.com + rel=0/modestbranding/iv_load_policy keep this as
+  // close to "no distracting suggestions" as YouTube's embed API allows —
+  // rel=0 limits any end-screen suggestions to this same channel only,
+  // there's no fully-suppress option without the paid API.
+  var YOUTUBE_VIDEO_ID = 'ArA7c1WuZAE';
+
   trigger.addEventListener('click', function () {
     var content = document.getElementById('video-lightbox-content');
-    var video = document.createElement('video');
-    video.src = 'assets/video/home-intro.mp4';
-    video.controls = true;
-    video.autoplay = true;
-    video.playsInline = true;
-    video.addEventListener('error', function () {
-      content.innerHTML = '<div class="video-lightbox-fallback">Our welcome video is coming soon.<br>Check back shortly!</div>';
-    });
-    content.appendChild(video);
+    var iframe = document.createElement('iframe');
+    iframe.src = 'https://www.youtube-nocookie.com/embed/' + YOUTUBE_VIDEO_ID +
+      '?autoplay=1&rel=0&modestbranding=1&iv_load_policy=3&playsinline=1';
+    iframe.title = 'CliniPause welcome video';
+    iframe.frameBorder = '0';
+    iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+    iframe.allowFullscreen = true;
+    content.appendChild(iframe);
     overlay.classList.add('open');
     document.body.style.overflow = 'hidden';
   });
