@@ -47,12 +47,40 @@ module.exports = async (req, res) => {
   try {
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
-      const { kind, record_id: recordId } = session.metadata || {};
+      const metadata = session.metadata || {};
+      const details = session.customer_details || {};
+      const shipping = session.shipping_details || details;
 
-      if (kind && recordId) {
+      if (metadata.kind === 'booking' && metadata.record_id) {
         await callRpc('confirm_store_payment', {
-          p_kind: kind,
-          p_id: recordId,
+          p_kind: 'booking',
+          p_id: metadata.record_id,
+          p_checkout_session_id: session.id,
+          p_payment_intent_id: session.payment_intent || null,
+          p_webhook_secret: process.env.STOREFRONT_WEBHOOK_SECRET
+        });
+      } else if (metadata.kind === 'order' && metadata.record_id) {
+        // Back-compat for any in-flight sessions created before this deploy.
+        await callRpc('confirm_store_payment', {
+          p_kind: 'order',
+          p_id: metadata.record_id,
+          p_checkout_session_id: session.id,
+          p_payment_intent_id: session.payment_intent || null,
+          p_webhook_secret: process.env.STOREFRONT_WEBHOOK_SECRET
+        });
+      } else if (metadata.kind === 'order') {
+        // One-click flow: this webhook call is what actually creates the
+        // order row (already paid) — see create_paid_order in the DB.
+        let items = [];
+        try { items = JSON.parse(metadata.items || '[]'); } catch (e) { items = []; }
+
+        await callRpc('create_paid_order', {
+          p_site: metadata.site,
+          p_customer_name: details.name || null,
+          p_email: details.email || null,
+          p_phone: details.phone || null,
+          p_shipping_address: shipping.address || null,
+          p_items: items,
           p_checkout_session_id: session.id,
           p_payment_intent_id: session.payment_intent || null,
           p_webhook_secret: process.env.STOREFRONT_WEBHOOK_SECRET
