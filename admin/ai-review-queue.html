@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en" class="auth-pending">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Review Queue · CliniPauseMD Admin</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <div class="sidebar-logo">
+        <span class="logo-dot"></span>
+        <span class="logo-text">CliniPauseMD</span>
+        <span class="admin-badge">ADMIN</span>
+      </div>
+      <div class="nav-group"><div class="nav-group-label">OPERATIONS</div><a class="nav-item" href="overview.html"><span class="dot"></span>Overview</a><a class="nav-item" href="#"><span class="dot"></span>Users</a><a class="nav-item" href="clinician-schedule.html"><span class="dot"></span>Clinicians</a><a class="nav-item" href="appointment-detail.html"><span class="dot"></span>Clinical Care</a></div><div class="nav-group"><div class="nav-group-label">CONTENT & KNOWLEDGE</div><a class="nav-item" href="content-bulk-actions.html"><span class="dot"></span>Content</a><a class="nav-item" href="evidence-library.html"><span class="dot"></span>Evidence Library</a><a class="nav-item" href="treatments.html"><span class="dot"></span>Treatments</a><a class="nav-item" href="supplement-library.html"><span class="dot"></span>Supplements</a><a class="nav-item" href="hormone-center.html"><span class="dot"></span>Hormones</a></div><div class="nav-group"><div class="nav-group-label">INTELLIGENCE</div><a class="nav-item active" href="ai-dashboard.html"><span class="dot"></span>AI & Intelligence</a><a class="nav-item" href="assessments.html"><span class="dot"></span>Assessments</a><a class="nav-item" href="safety-rules.html"><span class="dot"></span>Safety & Rules</a></div><div class="nav-group"><div class="nav-group-label">BUSINESS</div><a class="nav-item" href="subscriptions.html"><span class="dot"></span>Subscriptions</a><a class="nav-item" href="analytics.html"><span class="dot"></span>Analytics</a><a class="nav-item" href="reports.html"><span class="dot"></span>Reports</a></div><div class="nav-group"><div class="nav-group-label">WEBSITE</div><a class="nav-item" href="orders.html" data-nav-key="orders"><span class="dot"></span>Orders</a><a class="nav-item" href="products.html" data-nav-key="products"><span class="dot"></span>Products</a><a class="nav-item" href="live-chat.html" data-nav-key="live-chat"><span class="dot"></span>Live Chat<span class="nav-badge" data-badge-for="live-chat"></span></a><a class="nav-item" href="contact-messages.html" data-nav-key="contact-messages"><span class="dot"></span>Contact Form<span class="nav-badge" data-badge-for="contact-messages"></span></a><a class="nav-item" href="bookings.html" data-nav-key="bookings"><span class="dot"></span>Bookings</a><a class="nav-item" href="speaking-engagements.html" data-nav-key="speaking-engagements"><span class="dot"></span>Speaking Engagements<span class="nav-badge" data-badge-for="speaking-engagements"></span></a></div><div class="nav-group"><div class="nav-group-label">SYSTEM</div><a class="nav-item" href="notifications.html"><span class="dot"></span>Notifications</a><a class="nav-item" href="privacy-compliance.html"><span class="dot"></span>Privacy & Compliance</a><a class="nav-item" href="audit-log.html"><span class="dot"></span>Audit Log</a><a class="nav-item" href="system-health.html"><span class="dot"></span>System</a><a class="nav-item" href="admin-settings.html"><span class="dot"></span>Admin Settings</a></div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="avatar-circle">SC</div>
+      <div class="footer-meta">
+        <div class="name">Sarah Chen</div>
+        <div class="role">Super Admin</div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-content">
+
+    <header class="topbar">
+      <div class="search-input-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input class="search-input" type="text" placeholder="Search AI interactions, prompts, models..." />
+      </div>
+      <div class="topbar-actions">
+        <button class="icon-btn" title="Notifications">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        </button>
+        <button class="icon-btn" title="Help">?</button>
+        <div class="topbar-divider"></div>
+        <div class="user-badge">
+          <span class="u-name">Sarah Chen</span>
+          <span class="u-role">System Lead</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="page-content">
+
+      <div class="section-header">
+        <div>
+          <h1 class="page-title">AI Interaction Review Queue</h1>
+          <p class="page-subtitle">Verify and approve clinical queries processed by CliniPauseMD modules.</p>
+        </div>
+        <div class="header-actions"><input class="form-control" style="width:220px;display:inline-block;" placeholder="Search queue..." /><a class="btn btn-secondary" href="#">Filter</a></div>
+      </div>
+<div class="subnav-pills"><a class="pill" href="ai-dashboard.html">Dashboard</a><a class="pill active" href="ai-review-queue.html">Review Queue</a><a class="pill" href="ai-config.html">Configuration</a></div><div class="segment-pills"><span class="pill active">All Cases <span class="count">(127)</span></span><span class="pill">Pending Review <span class="count">(84)</span></span><span class="pill">High Concern <span class="count">(35)</span></span><span class="pill">Escalated <span class="count">(8)</span></span></div>
+      <div class="table-card">
+        
+        <table class="data-table">
+          <thead><tr><th>Interaction ID</th><th>User Intent Summary</th><th>Risk Level</th><th>Module</th><th>Status</th><th>Created Timestamp</th><th>Action</th></tr></thead>
+          <tbody><tr><td>AI-8942</td><td>Can I take BHRT with blood clotting history?</td><td><span class="badge badge-red">High Concern</span></td><td>Hormone Intelligence</td><td>Pending</td><td>Jan 14, 11:24 AM</td><td><a class="btn btn-sm btn-primary" href="ai-review-detail.html">Review</a></td></tr><tr><td>AI-8941</td><td>Is this supplement safe with my thyroid medication?</td><td><span class="badge badge-amber">Review Needed</span></td><td>Supplement Intel</td><td>Pending</td><td>Jan 14, 11:24 AM</td><td><a class="btn btn-sm btn-primary" href="ai-review-detail.html">Review</a></td></tr><tr><td>AI-8940</td><td>Alternative remedies for vaginal dryness post-treatment</td><td><span class="badge badge-blue">Standard Risk</span></td><td>Precision Relief</td><td>Reviewed</td><td>Jan 14, 11:24 AM</td><td><a class="btn btn-sm btn-primary" href="ai-review-detail.html">Review</a></td></tr><tr><td>AI-8939</td><td>Estrogen dominance warning and patch dosage alignment</td><td><span class="badge badge-red">High Concern</span></td><td>Hormone Intelligence</td><td>Pending</td><td>Jan 14, 11:24 AM</td><td><a class="btn btn-sm btn-primary" href="ai-review-detail.html">Review</a></td></tr><tr><td>AI-8938</td><td>Can evening primrose oil safely reduce hot flashes?</td><td><span class="badge badge-amber">Review Needed</span></td><td>Supplement Intel</td><td>Pending</td><td>Jan 14, 11:24 AM</td><td><a class="btn btn-sm btn-primary" href="ai-review-detail.html">Review</a></td></tr><tr><td>AI-8937</td><td>Coping with severe fatigue, fog, and sleep loss</td><td><span class="badge badge-blue">Standard Risk</span></td><td>Ask CliniPauseMD</td><td>Reviewed</td><td>Jan 14, 11:24 AM</td><td><a class="btn btn-sm btn-primary" href="ai-review-detail.html">Review</a></td></tr><tr><td>AI-8936</td><td>High blood pressure spikes during hot flashes evaluation</td><td><span class="badge badge-red">Urgent Risk</span></td><td>Ask CliniPauseMD</td><td>Escalated</td><td>Jan 14, 11:24 AM</td><td><a class="btn btn-sm btn-primary" href="ai-review-detail.html">Review</a></td></tr><tr><td>AI-8935</td><td>Calcium with Vitamin D guidelines for osteoporosis prevention</td><td><span class="badge badge-blue">Standard Risk</span></td><td>Supplement Intel</td><td>Reviewed</td><td>Jan 14, 11:24 AM</td><td><a class="btn btn-sm btn-primary" href="ai-review-detail.html">Review</a></td></tr></tbody>
+        </table>
+        
+        <div class="table-footer">
+          <span>Showing 1-8 of 84 pending cases</span>
+          <div class="pagination"><button disabled>Previous</button><button>Next</button></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/auth-guard.js"></script>
+<script src="js/nav-badges.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
