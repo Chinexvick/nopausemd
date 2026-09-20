@@ -88,40 +88,59 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: 'No items to purchase' });
         return;
       }
+      if (items.length > 50) {
+        res.status(400).json({ error: 'Too many items' });
+        return;
+      }
 
       const lineItems = [];
       const metaItems = [];
+      let hasRecurring = false;
 
       for (const item of items) {
-        const quantity = Math.max(parseInt(item.quantity, 10) || 1, 1);
-        const rows = await select('store_products', `id=eq.${encodeURIComponent(item.product_id)}&select=id,name,price_cents,image_url&active=eq.true`);
+        const quantity = Math.max(Math.min(parseInt(item.quantity, 10) || 1, 999), 1);
+        const productId = typeof item.product_id === 'string' ? item.product_id : '';
+        if (!productId) {
+          res.status(400).json({ error: 'Invalid item in cart' });
+          return;
+        }
+        const recurring = item.recurring === true;
+        if (recurring) hasRecurring = true;
+
+        const rows = await select('store_products', `id=eq.${encodeURIComponent(productId)}&select=id,name,price_cents,image_url&active=eq.true`);
         const product = rows[0];
         if (!product) {
           res.status(400).json({ error: 'One of the selected products is unavailable' });
           return;
         }
 
-        lineItems.push({
-          price_data: {
-            currency: 'usd',
-            unit_amount: product.price_cents,
-            product_data: {
-              name: product.name,
-              images: product.image_url ? [product.image_url] : undefined
-            }
-          },
-          quantity
-        });
-        metaItems.push({ product_id: product.id, quantity });
+        const priceData = {
+          currency: 'usd',
+          unit_amount: product.price_cents,
+          product_data: {
+            name: product.name,
+            images: product.image_url ? [product.image_url] : undefined
+          }
+        };
+        if (recurring) {
+          priceData.recurring = { interval: 'month' };
+        }
+
+        lineItems.push({ price_data: priceData, quantity });
+        metaItems.push({ product_id: product.id, quantity, recurring });
       }
 
+      // Stripe Checkout requires a single mode per session. If any item is
+      // recurring, the whole session runs in subscription mode — Stripe
+      // allows mixing one-time (`price_data` without `recurring`) and
+      // recurring line items within a single subscription-mode session.
       const session = await stripe.checkout.sessions.create({
-        mode: 'payment',
+        mode: hasRecurring ? 'subscription' : 'payment',
         payment_method_types: ['card'],
         phone_number_collection: { enabled: true },
         shipping_address_collection: { allowed_countries: ['US', 'CA'] },
         line_items: lineItems,
-        metadata: { kind: 'order', site, items: JSON.stringify(metaItems) },
+        metadata: { kind: 'order', site, items: JSON.stringify(metaItems), recurring: hasRecurring ? '1' : '0' },
         success_url: `${safeOrigin || 'https://nopausemd.vercel.app'}/shop.html?paid=1`,
         cancel_url: `${safeOrigin || 'https://nopausemd.vercel.app'}/shop.html?canceled=1`
       });

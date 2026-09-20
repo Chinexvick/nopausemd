@@ -67,12 +67,14 @@ document.addEventListener('DOMContentLoaded', function () {
   initCart();
   initBookingModal();
   initShopProducts();
+  initHomeProductsTeaser();
   showPaymentReturnBanner();
   initContactModal();
   initLiveChat();
   initHeroEntrance();
   initScrollReveal();
   initHeroVideo();
+  initNewsletterPopup();
 });
 
 /* =========================================================
@@ -482,62 +484,76 @@ function money(cents) { return '$' + (Number(cents || 0) / 100).toFixed(2); }
    just adds a line to the cart (see initCart) — checkout for
    everything in the cart happens once, from the cart drawer.
    ========================================================= */
-function initShopProducts() {
-  var grid = document.getElementById('shop-product-grid');
+function renderProductGrid(grid, products) {
+  var byId = {};
+  products.forEach(function (p) { byId[p.id] = p; });
+
+  grid.innerHTML = products.map(function (p) {
+    var isBook = p.category === 'book';
+    return (
+      '<div class="product-card">' +
+        '<div class="product-image" data-view-product-id="' + p.id + '"' + (isBook ? ' style="background:#0c211b;"' : '') + '>' +
+          '<img src="' + escapeHtml(p.image_url || '') + '" alt="' + escapeHtml(p.name) + '" loading="lazy">' +
+        '</div>' +
+        '<div class="product-body">' +
+          '<div class="badge-row"><span class="badge badge-green">' + escapeHtml(p.category || 'Wellness') + '</span></div>' +
+          '<h3 data-view-product-id="' + p.id + '" style="cursor:pointer;">' + escapeHtml(p.name) + '</h3>' +
+          '<p>' + escapeHtml(p.description || '') + '</p>' +
+          '<div class="price-row"><span class="price-now">' + money(p.price_cents) + '</span></div>' +
+          '<button class="product-btn" data-add-to-cart-id="' + p.id + '">Add to Cart</button>' +
+        '</div>' +
+      '</div>'
+    );
+  }).join('');
+
+  grid.querySelectorAll('[data-add-to-cart-id]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var product = byId[btn.getAttribute('data-add-to-cart-id')];
+      if (!product) return;
+      window.CliniCart.add(product);
+      var original = btn.textContent;
+      btn.textContent = 'Added ✓';
+      btn.disabled = true;
+      setTimeout(function () { btn.textContent = original; btn.disabled = false; }, 1200);
+    });
+  });
+
+  grid.querySelectorAll('[data-view-product-id]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      var product = byId[el.getAttribute('data-view-product-id')];
+      if (product) window.openProductDetail(product);
+    });
+  });
+}
+
+function loadProducts(selectorId, limit) {
+  var grid = document.getElementById(selectorId);
   if (!grid) return;
 
-  supabaseSelect('store_products', 'select=id,name,description,price_cents,image_url,category&active=eq.true&order=sort_order.asc')
+  var query = 'select=id,name,description,price_cents,image_url,category&active=eq.true&order=sort_order.asc';
+  if (limit) query += '&limit=' + encodeURIComponent(limit);
+
+  supabaseSelect('store_products', query)
     .then(function (products) {
       if (!products || !products.length) {
         grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--neutral-n200);">Check back soon — new products are on the way.</p>';
         return;
       }
-
-      var byId = {};
-      products.forEach(function (p) { byId[p.id] = p; });
-
-      grid.innerHTML = products.map(function (p) {
-        var isBook = p.category === 'book';
-        return (
-          '<div class="product-card">' +
-            '<div class="product-image" data-view-product-id="' + p.id + '"' + (isBook ? ' style="background:#0c211b;"' : '') + '>' +
-              '<img src="' + escapeHtml(p.image_url || '') + '" alt="' + escapeHtml(p.name) + '" loading="lazy">' +
-            '</div>' +
-            '<div class="product-body">' +
-              '<div class="badge-row"><span class="badge badge-green">' + escapeHtml(p.category || 'Wellness') + '</span></div>' +
-              '<h3 data-view-product-id="' + p.id + '" style="cursor:pointer;">' + escapeHtml(p.name) + '</h3>' +
-              '<p>' + escapeHtml(p.description || '') + '</p>' +
-              '<div class="price-row"><span class="price-now">' + money(p.price_cents) + '</span></div>' +
-              '<button class="product-btn" data-add-to-cart-id="' + p.id + '">Add to Cart</button>' +
-            '</div>' +
-          '</div>'
-        );
-      }).join('');
-
-      grid.querySelectorAll('[data-add-to-cart-id]').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          var product = byId[btn.getAttribute('data-add-to-cart-id')];
-          if (!product) return;
-          window.CliniCart.add(product);
-          var original = btn.textContent;
-          btn.textContent = 'Added ✓';
-          btn.disabled = true;
-          setTimeout(function () { btn.textContent = original; btn.disabled = false; }, 1200);
-        });
-      });
-
-      grid.querySelectorAll('[data-view-product-id]').forEach(function (el) {
-        el.addEventListener('click', function () {
-          var product = byId[el.getAttribute('data-view-product-id')];
-          if (product) window.openProductDetail(product);
-        });
-      });
+      renderProductGrid(grid, products);
     })
     .catch(function () {
       grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--neutral-n200);">Unable to load products right now. Please refresh the page.</p>';
     });
 
   initProductDetailModal();
+}
+
+function initShopProducts() {
+  loadProducts('shop-product-grid', null);
+}
+
+function initHomeProductsTeaser() {
+  loadProducts('home-product-grid', 2);
 }
 
 /* =========================================================
@@ -610,24 +626,8 @@ function initCart() {
     updateBadge();
   }
 
-  var navCta = document.querySelector('.nav-cta');
-  if (navCta && navCta.parentElement) {
-    var cartBtn = document.createElement('button');
-    cartBtn.type = 'button';
-    cartBtn.className = 'cart-btn';
-    cartBtn.setAttribute('aria-label', 'Open cart');
-    cartBtn.innerHTML =
-      '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>' +
-      '<span class="cart-badge" id="cart-badge">0</span>';
-    navCta.parentElement.insertBefore(cartBtn, navCta);
-    cartBtn.addEventListener('click', openDrawer);
-  }
-
-  var overlay = document.createElement('div');
-  overlay.className = 'cart-drawer-overlay';
-  overlay.id = 'cart-drawer-overlay';
-  document.body.appendChild(overlay);
-
+  // Floating cart popup — no persistent nav icon. It shows itself the
+  // moment something is added, and hides itself once the cart is empty.
   var drawer = document.createElement('div');
   drawer.className = 'cart-drawer';
   drawer.id = 'cart-drawer';
@@ -642,24 +642,16 @@ function initCart() {
   document.body.appendChild(drawer);
 
   function openDrawer() {
-    overlay.classList.add('open');
     drawer.classList.add('open');
-    document.body.style.overflow = 'hidden';
   }
   function closeDrawer() {
-    overlay.classList.remove('open');
     drawer.classList.remove('open');
-    document.body.style.overflow = '';
   }
-  overlay.addEventListener('click', closeDrawer);
   drawer.querySelector('.cart-drawer-close').addEventListener('click', closeDrawer);
 
   function updateBadge() {
-    var count = readCart().reduce(function (sum, i) { return sum + i.quantity; }, 0);
-    document.querySelectorAll('#cart-badge').forEach(function (badge) {
-      badge.textContent = count;
-      badge.classList.toggle('show', count > 0);
-    });
+    // No persistent nav badge anymore; kept as a no-op hook in case any
+    // markup elsewhere still queries #cart-badge.
   }
 
   function renderDrawer() {
@@ -671,6 +663,7 @@ function initCart() {
     if (!items.length) {
       itemsEl.innerHTML = '<div class="cart-empty">Your cart is empty.</div>';
       footerEl.style.display = 'none';
+      closeDrawer();
       return;
     }
 
@@ -687,6 +680,11 @@ function initCart() {
               '<span>' + item.quantity + '</span>' +
               '<button type="button" data-qty-up="' + i + '">+</button>' +
             '</div>' +
+            '<label class="cart-item-recurring">' +
+              '<input type="checkbox" data-recurring="' + i + '"' + (item.recurring ? ' checked' : '') + '>' +
+              ' Subscribe &amp; save (monthly)' +
+            '</label>' +
+            (item.recurring ? '<p class="cart-item-recurring-note">Recurring: you\'ll be charged automatically and receive this product every month, on the same day as this order.</p>' : '') +
             '<button type="button" class="cart-item-remove" data-remove="' + i + '">Remove</button>' +
           '</div>' +
         '</div>'
@@ -719,6 +717,14 @@ function initCart() {
         writeCart(items);
       });
     });
+    itemsEl.querySelectorAll('[data-recurring]').forEach(function (cb) {
+      cb.addEventListener('change', function () {
+        var items = readCart();
+        var idx = +cb.getAttribute('data-recurring');
+        items[idx].recurring = cb.checked;
+        writeCart(items);
+      });
+    });
   }
 
   drawer.querySelector('#cart-checkout-btn').addEventListener('click', function () {
@@ -732,7 +738,7 @@ function initCart() {
 
     startCheckout({
       kind: 'order',
-      order: { items: items.map(function (i) { return { product_id: i.id, quantity: i.quantity }; }) }
+      order: { items: items.map(function (i) { return { product_id: i.id, quantity: i.quantity, recurring: !!i.recurring }; }) }
     }).then(function (data) {
       window.location.href = data.url;
     }).catch(function (err) {
@@ -749,8 +755,9 @@ function initCart() {
       var items = readCart();
       var existing = items.find(function (i) { return i.id === product.id; });
       if (existing) existing.quantity += quantity;
-      else items.push({ id: product.id, name: product.name, price_cents: product.price_cents, image_url: product.image_url, quantity: quantity });
+      else items.push({ id: product.id, name: product.name, price_cents: product.price_cents, image_url: product.image_url, quantity: quantity, recurring: false });
       writeCart(items);
+      openDrawer();
     },
     clear: function () { writeCart([]); },
     open: openDrawer
@@ -1012,4 +1019,96 @@ function initLiveChat() {
     supabaseRpc('send_chat_message', { p_conversation_id: convId, p_visitor_token: getToken(), p_body: body })
       .then(function () { fetchMessages(convId); });
   });
+}
+
+/* =========================================================
+   Newsletter popup — appears once per browser session, 20s
+   after page load. Dismissing (or subscribing) marks the
+   session so it doesn't reappear on later page navigations
+   within the same tab session.
+   ========================================================= */
+function initNewsletterPopup() {
+  var SESSION_KEY = 'clinipause_newsletter_seen';
+  var EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  var alreadySeen = false;
+  try { alreadySeen = sessionStorage.getItem(SESSION_KEY) === '1'; } catch (e) { alreadySeen = false; }
+  if (alreadySeen) return;
+
+  function markSeen() {
+    try { sessionStorage.setItem(SESSION_KEY, '1'); } catch (e) { /* ignore */ }
+  }
+
+  setTimeout(function () {
+    // Re-check — the popup may have already been dismissed on another tab
+    // within the same session, or shown earlier this page load.
+    try { if (sessionStorage.getItem(SESSION_KEY) === '1') return; } catch (e) { /* ignore */ }
+
+    var overlay = document.createElement('div');
+    overlay.className = 'newsletter-overlay';
+    overlay.innerHTML =
+      '<div class="newsletter-modal" role="dialog" aria-modal="true">' +
+        '<button type="button" class="newsletter-close" aria-label="Close">&times;</button>' +
+        '<div class="newsletter-body">' +
+          '<h3>Stay in the loop</h3>' +
+          '<p>Get occasional wellness tips and updates from CliniPause. No spam, unsubscribe anytime.</p>' +
+          '<form class="newsletter-form" id="newsletter-form" novalidate>' +
+            '<input type="email" id="newsletter-email" placeholder="you@example.com" required>' +
+            '<button type="submit" class="btn btn-primary" id="newsletter-submit">Subscribe</button>' +
+          '</form>' +
+          '<p class="newsletter-message" id="newsletter-message"></p>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    requestAnimationFrame(function () { overlay.classList.add('open'); });
+
+    function dismiss() {
+      overlay.classList.remove('open');
+      markSeen();
+      setTimeout(function () { overlay.remove(); }, 300);
+    }
+
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay) dismiss();
+    });
+    overlay.querySelector('.newsletter-close').addEventListener('click', dismiss);
+
+    var form = overlay.querySelector('#newsletter-form');
+    var submitBtn = overlay.querySelector('#newsletter-submit');
+    var msgEl = overlay.querySelector('#newsletter-message');
+    var submitting = false;
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      if (submitting) return; // prevent double-submit
+
+      var email = overlay.querySelector('#newsletter-email').value.trim();
+      if (!EMAIL_RE.test(email)) {
+        msgEl.textContent = 'Please enter a valid email address.';
+        msgEl.classList.add('show', 'error');
+        return;
+      }
+
+      submitting = true;
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Subscribing…';
+      msgEl.classList.remove('show', 'error');
+
+      supabaseRpc('subscribe_newsletter', { p_site: STOREFRONT_SITE, p_email: email })
+        .then(function () {
+          msgEl.textContent = "You're subscribed! Thanks for joining us.";
+          msgEl.classList.add('show');
+          form.style.display = 'none';
+          markSeen();
+          setTimeout(dismiss, 2000);
+        })
+        .catch(function (err) {
+          submitting = false;
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Subscribe';
+          msgEl.textContent = (err && err.message) || 'Something went wrong. Please try again.';
+          msgEl.classList.add('show', 'error');
+        });
+    });
+  }, 20000);
 }

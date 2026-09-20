@@ -37,6 +37,7 @@
 
 <!-- Home Hero -->
 <section class="home-hero section">
+  <div class="leaf-decoration leaf-decoration--corner-tl" aria-hidden="true"><svg viewBox="0 0 100 100" fill="currentColor"><path d="M50 5C20 20 10 55 30 85c5-20 15-30 30-40C75 35 70 15 50 5z"/></svg></div>
   <div class="container home-hero-inner">
     <div class="home-hero-copy">
       <span class="eyebrow">PERIMENOPAUSE • MENOPAUSE • HORMONE HEALTH</span>
@@ -222,8 +223,11 @@
       <h2>Wellness Products, Selected With Your Journey in Mind.</h2>
       <p>Explore CliniPause wellness products designed to complement your health and wellbeing journey.</p>
     </div>
-    <div style="display:flex;justify-content:center;">
-      <a href="shop.html" class="btn btn-primary">View Products</a>
+    <div class="product-grid" id="home-product-grid">
+      <p style="grid-column:1/-1;text-align:center;color:var(--neutral-n200);">Loading products…</p>
+    </div>
+    <div style="display:flex;justify-content:center;margin-top:32px;">
+      <a href="shop.html" class="btn btn-primary">View All Products</a>
     </div>
   </div>
 </section>
@@ -331,6 +335,7 @@
 </section>
 
 <footer class="site-footer">
+  <div class="leaf-decoration leaf-decoration--footer" aria-hidden="true"><svg viewBox="0 0 100 100" fill="currentColor"><path d="M50 5C20 20 10 55 30 85c5-20 15-30 30-40C75 35 70 15 50 5z"/></svg></div>
   <div class="container">
     <div class="footer-main">
       <div class="footer-brand">
@@ -340,7 +345,10 @@
         </div>
         <p>Clinical Care. Natural Solutions. A Healthier You.</p>
         <p class="dim">Founded by Dr. Ivanah Thomas · Atlanta, GA</p>
-        <p>Atlanta, GA · Telehealth nationwide</p>
+        <div class="app-badges">
+          <a href="#" class="app-badge-link" aria-label="Download on the App Store"><img src="assets/images/app-store-badge.png" alt="Download on the App Store" loading="lazy"></a>
+          <a href="#" class="app-badge-link" aria-label="Get it on Google Play"><img src="assets/images/google-play-badge.png" alt="Get it on Google Play" loading="lazy"></a>
+        </div>
       </div>
       <div class="footer-links">
         <div class="footer-col">
@@ -361,9 +369,7 @@
         </div>
         <div class="footer-col">
           <h4>Contact</h4>
-          <p>CliniPause@gmail.com</p>
-          <p>+1 312-555-4829</p>
-          <p>742 Evergreen Terrace, Springfield, IL</p>
+          <p>info@clinipause.com</p>
         </div>
         <div class="footer-col">
           <h4>Company</h4>

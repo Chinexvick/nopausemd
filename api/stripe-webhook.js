@@ -68,6 +68,30 @@ module.exports = async (req, res) => {
           p_payment_intent_id: session.payment_intent || null,
           p_webhook_secret: process.env.STOREFRONT_WEBHOOK_SECRET
         });
+      } else if (metadata.kind === 'order' && metadata.recurring === '1') {
+        // Subscription checkout: at least one cart item was "Subscribe &
+        // save". Each recurring line item becomes its own subscription
+        // record (they all share the same underlying Stripe subscription).
+        let items = [];
+        try { items = JSON.parse(metadata.items || '[]'); } catch (e) { items = []; }
+        const recurringItems = items.filter((i) => i.recurring);
+
+        for (const item of recurringItems) {
+          await callRpc('create_paid_subscription', {
+            p_site: metadata.site,
+            p_customer_name: details.name || null,
+            p_email: details.email || null,
+            p_phone: details.phone || null,
+            p_shipping_address: shipping.address || null,
+            p_product_id: item.product_id,
+            p_quantity: item.quantity,
+            p_stripe_customer_id: session.customer || null,
+            p_stripe_subscription_id: session.subscription || null,
+            p_checkout_session_id: session.id,
+            p_payment_intent_id: session.payment_intent || null,
+            p_webhook_secret: process.env.STOREFRONT_WEBHOOK_SECRET
+          });
+        }
       } else if (metadata.kind === 'order') {
         // One-click flow: this webhook call is what actually creates the
         // order row (already paid) — see create_paid_order in the DB.
@@ -86,6 +110,22 @@ module.exports = async (req, res) => {
           p_webhook_secret: process.env.STOREFRONT_WEBHOOK_SECRET
         });
       }
+    } else if (event.type === 'invoice.payment_succeeded') {
+      const invoice = event.data.object;
+      if (invoice.subscription && invoice.billing_reason === 'subscription_cycle') {
+        await callRpc('record_subscription_renewal', {
+          p_stripe_subscription_id: invoice.subscription,
+          p_checkout_session_id: invoice.id,
+          p_payment_intent_id: invoice.payment_intent || null,
+          p_webhook_secret: process.env.STOREFRONT_WEBHOOK_SECRET
+        });
+      }
+    } else if (event.type === 'customer.subscription.deleted') {
+      const subscription = event.data.object;
+      await callRpc('cancel_subscription_record', {
+        p_stripe_subscription_id: subscription.id,
+        p_webhook_secret: process.env.STOREFRONT_WEBHOOK_SECRET
+      });
     }
 
     res.status(200).json({ received: true });
