@@ -45,9 +45,31 @@ document.addEventListener('DOMContentLoaded', function () {
   // Mobile nav toggle
   var toggle = document.querySelector('.nav-toggle');
   var links = document.querySelector('.nav-links');
+  var navOverlay = document.querySelector('.nav-overlay');
+  function closeNav() {
+    if (links) links.classList.remove('open');
+    if (navOverlay) navOverlay.classList.remove('open');
+    if (toggle) toggle.classList.remove('open');
+    document.body.classList.remove('nav-open');
+  }
+  function openNav() {
+    if (links) links.classList.add('open');
+    if (navOverlay) navOverlay.classList.add('open');
+    if (toggle) toggle.classList.add('open');
+    document.body.classList.add('nav-open');
+  }
   if (toggle && links) {
     toggle.addEventListener('click', function () {
-      links.classList.toggle('open');
+      if (links.classList.contains('open')) closeNav(); else openNav();
+    });
+    document.querySelectorAll('[data-nav-close]').forEach(function (el) {
+      el.addEventListener('click', closeNav);
+    });
+    links.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', closeNav);
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeNav();
     });
   }
 
