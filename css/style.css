@@ -1036,10 +1036,15 @@ ul { margin: 0; padding: 0; }
   height: 380px;
 }
 
+.split-image--caption {
+  height: 460px;
+}
+
 .split-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center 15%;
   transition: transform 0.5s ease;
 }
 
