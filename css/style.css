@@ -1196,6 +1196,38 @@ ul { margin: 0; padding: 0; }
 .footer-brand p { margin: 0; font-size: 15px; line-height: 1.6; }
 .footer-brand .dim { color: var(--footer-text-dim); font-size: 14px; }
 
+.app-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.app-badge-link {
+  display: inline-flex;
+  line-height: 0;
+  border-radius: 8px;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.app-badge-link:hover,
+.app-badge-link:focus-visible {
+  transform: translateY(-2px);
+  opacity: 0.9;
+}
+
+.app-badge-link img {
+  height: 44px;
+  width: auto;
+  display: block;
+  border-radius: 8px;
+}
+
+@media (max-width: 480px) {
+  .app-badges { justify-content: flex-start; }
+  .app-badge-link img { height: 40px; }
+}
+
 .footer-links {
   display: flex;
   gap: 60px;
