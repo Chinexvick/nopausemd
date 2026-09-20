@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Analytics · CliniPauseMD Admin</title>
+<title>Sales Analytics · CliniPauseMD Admin</title>
 <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -51,51 +51,56 @@
 
       <div class="section-header">
         <div>
-          <h1 class="page-title">Analytics</h1>
-          <p class="page-subtitle">Platform-wide performance and engagement metrics.</p>
+          <h1 class="page-title">Sales Analytics</h1>
+          <p class="page-subtitle">Live revenue and order data from the storefront — updates automatically as new orders come in.</p>
         </div>
-        <div class="header-actions"><a class="btn btn-secondary" href="#">Export Report</a></div>
-      </div>
-<div class="tab-strip" data-tab-group><a class="tab-item active" href="#" data-tab>Overview</a><a class="tab-item" href="#" data-tab>User Analytics</a><a class="tab-item" href="#" data-tab>Clinical Analytics</a><a class="tab-item" href="#" data-tab>AI Analytics</a></div><div class="kpi-strip">
-      <div class="kpi-card">
-        <div class="kpi-label">Total Patients</div>
-        <div class="kpi-value">14,200</div>
-        <div class="kpi-delta green"><span class="dot"></span>+4.8% (30d)</div>
+        <div class="header-actions"><a class="btn btn-secondary" href="#" id="refresh-analytics">Refresh</a></div>
       </div>
 
-      <div class="kpi-card">
-        <div class="kpi-label">Monthly Active Users</div>
-        <div class="kpi-value">9,640</div>
-        <div class="kpi-delta green"><span class="dot"></span>+3.1%</div>
+      <div class="kpi-strip">
+        <div class="kpi-card">
+          <div class="kpi-label">Revenue Today</div>
+          <div class="kpi-value" id="kpi-revenue-today">—</div>
+          <div class="kpi-delta blue"><span class="dot"></span><span id="kpi-orders-today">0</span> orders today</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Revenue This Month</div>
+          <div class="kpi-value" id="kpi-revenue-month">—</div>
+          <div class="kpi-delta green"><span class="dot"></span><span id="kpi-orders-month">0</span> orders this month</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Revenue (All Time)</div>
+          <div class="kpi-value" id="kpi-revenue-total">—</div>
+          <div class="kpi-delta blue"><span class="dot"></span><span id="kpi-orders-total">0</span> successful orders</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Active Subscriptions</div>
+          <div class="kpi-value" id="kpi-subs-active">—</div>
+          <div class="kpi-delta green"><span class="dot"></span><span id="kpi-mrr">$0.00</span> MRR</div>
+        </div>
       </div>
 
-      <div class="kpi-card">
-        <div class="kpi-label">Avg. Session Length</div>
-        <div class="kpi-value">8m 42s</div>
-        <div class="kpi-delta green"><span class="dot"></span>+0:34</div>
+      <div class="card">
+        <div class="card-title">Revenue by Day (last 30 days)</div>
+        <div class="chart-bars" id="chart-daily"></div>
       </div>
 
-      <div class="kpi-card">
-        <div class="kpi-label">NPS Score</div>
-        <div class="kpi-value">62</div>
-        <div class="kpi-delta green"><span class="dot"></span>+4</div>
-      </div>
-</div><div class="card"><div class="card-title">Engagement Over Time</div><div style="height:220px;border:1px dashed var(--border);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:13px;">Chart: Daily Active Users (line, 90 days)</div></div><div class="grid-2"><div class="card"><div class="card-title">Top Regions</div><div class="meta-row"><span class="meta-label">California</span><span class="meta-value">2,140 patients</span></div><div class="meta-row"><span class="meta-label">Texas</span><span class="meta-value">1,880 patients</span></div><div class="meta-row"><span class="meta-label">Florida</span><span class="meta-value">1,510 patients</span></div></div><div class="card"><div class="card-title">Feature Adoption</div>
-      <div class="progress-row">
-        <div class="p-label"><span>Symptom Tracker</span><span>84%</span></div>
-        <div class="progress-track"><div class="progress-fill green" style="width:84%"></div></div>
-      </div>
-
-      <div class="progress-row">
-        <div class="p-label"><span>Ask CliniPauseMD</span><span>71%</span></div>
-        <div class="progress-track"><div class="progress-fill green" style="width:71%"></div></div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Revenue by Hour (today)</div>
+          <div class="chart-bars chart-bars--hours" id="chart-hourly"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Top Products (last 30 days)</div>
+          <div id="top-products"><div class="orders-empty">Loading…</div></div>
+        </div>
       </div>
 
-      <div class="progress-row">
-        <div class="p-label"><span>Community</span><span>46%</span></div>
-        <div class="progress-track"><div class="progress-fill amber" style="width:46%"></div></div>
+      <div class="card">
+        <div class="card-title">Most Recent Successful Orders</div>
+        <div id="recent-orders"><div class="orders-empty">Loading…</div></div>
       </div>
-</div></div>
+
     </main>
   </div>
 </div>
@@ -103,6 +108,7 @@
 <script src="js/supabase-client.js"></script>
 <script src="js/auth-guard.js"></script>
 <script src="js/nav-badges.js"></script>
+<script src="js/analytics.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>
