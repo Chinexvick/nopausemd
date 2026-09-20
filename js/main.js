@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 
   initBookingModal();
-  initProductCheckout();
+  initShopProducts();
   showPaymentReturnBanner();
   initContactModal();
   initLiveChat();
@@ -450,116 +450,73 @@ function initBookingModal() {
 }
 
 /* =========================================================
-   Product checkout — shop.html "Add to Cart" / "Get the Book"
-   buttons open a short contact + shipping form, then redirect
-   to Stripe Checkout. Prices are always looked up server-side
-   from store_products, never trusted from the page.
+   Shop — products are never hardcoded. They're loaded from
+   store_products (managed in the admin dashboard: title,
+   description, price, image) and rendered here. "Buy Now" goes
+   straight to Stripe Checkout in one click — no form on our
+   site at all. Stripe's own hosted page collects email, name,
+   and shipping address; the order itself is only created (as
+   already-paid) once the webhook confirms the charge.
    ========================================================= */
-function initProductCheckout() {
-  var buttons = document.querySelectorAll('[data-product-slug]');
-  if (!buttons.length) return;
+function initShopProducts() {
+  var grid = document.getElementById('shop-product-grid');
+  if (!grid) return;
 
-  var overlay = document.createElement('div');
-  overlay.className = 'booking-overlay';
-  overlay.id = 'product-checkout';
-  overlay.innerHTML =
-    '<div class="booking-modal" role="dialog" aria-modal="true">' +
-      '<button type="button" class="booking-close" data-product-close aria-label="Close">&times;</button>' +
-      '<div class="booking-panels"></div>' +
-    '</div>';
-  document.body.appendChild(overlay);
-  var panels = overlay.querySelector('.booking-panels');
-
-  function close() {
-    overlay.classList.remove('open');
-    document.body.style.overflow = '';
-  }
-
-  overlay.addEventListener('click', function (e) {
-    if (e.target === overlay || e.target.hasAttribute('data-product-close')) close();
-  });
-
-  buttons.forEach(function (btn) {
-    btn.addEventListener('click', function (e) {
-      e.preventDefault();
-      var slug = btn.getAttribute('data-product-slug');
-      var name = btn.getAttribute('data-product-name') || 'this product';
-      renderForm(slug, name);
-      overlay.classList.add('open');
-      document.body.style.overflow = 'hidden';
+  function escapeHtml(str) {
+    return String(str == null ? '' : str).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
-  });
+  }
+  function money(cents) { return '$' + (Number(cents || 0) / 100).toFixed(2); }
 
-  function renderForm(slug, name) {
-    panels.innerHTML =
-      '<p class="booking-eyebrow">Checkout</p>' +
-      '<h3 class="booking-title">' + name + '</h3>' +
-      '<p class="booking-sub">Enter your details to continue to secure payment.</p>' +
-      '<form id="product-form">' +
-        '<div class="booking-row-2">' +
-          '<div class="booking-field"><label>Full name</label><input type="text" name="name" required></div>' +
-          '<div class="booking-field"><label>Phone</label><input type="tel" name="phone" required></div>' +
-        '</div>' +
-        '<div class="booking-field"><label>Email</label><input type="email" name="email" required></div>' +
-        '<div class="booking-field"><label>Shipping address</label><input type="text" name="address" placeholder="Street address" required></div>' +
-        '<div class="booking-row-2">' +
-          '<div class="booking-field"><input type="text" name="city" placeholder="City" required></div>' +
-          '<div class="booking-field"><input type="text" name="zip" placeholder="ZIP / Postal code" required></div>' +
-        '</div>' +
-        '<p class="booking-error" id="product-error">Please complete all fields.</p>' +
-        '<div class="booking-actions" style="justify-content:flex-end;">' +
-          '<button type="submit" class="btn btn-primary" id="product-pay-btn">Continue to Secure Payment</button>' +
-        '</div>' +
-      '</form>' +
-      '<p class="booking-note">You\'ll be taken to Stripe\'s secure checkout to enter your card details.</p>';
-
-    document.getElementById('product-form').addEventListener('submit', function (e) {
-      e.preventDefault();
-      var fd = new FormData(e.target);
-      var details = {
-        name: (fd.get('name') || '').trim(),
-        phone: (fd.get('phone') || '').trim(),
-        email: (fd.get('email') || '').trim(),
-        address: (fd.get('address') || '').trim(),
-        city: (fd.get('city') || '').trim(),
-        zip: (fd.get('zip') || '').trim()
-      };
-      if (!details.name || !details.phone || !details.email || !details.address || !details.city || !details.zip) {
-        document.getElementById('product-error').classList.add('show');
+  supabaseSelect('store_products', 'select=id,name,description,price_cents,image_url,category&active=eq.true&order=sort_order.asc')
+    .then(function (products) {
+      if (!products || !products.length) {
+        grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--neutral-n200);">Check back soon — new products are on the way.</p>';
         return;
       }
 
-      var payBtn = document.getElementById('product-pay-btn');
-      payBtn.disabled = true;
-      payBtn.textContent = 'Looking up product…';
+      grid.innerHTML = products.map(function (p) {
+        var isBook = p.category === 'book';
+        return (
+          '<div class="product-card">' +
+            '<div class="product-image"' + (isBook ? ' style="background:#0c211b;"' : '') + '>' +
+              '<img src="' + escapeHtml(p.image_url || '') + '" alt="' + escapeHtml(p.name) + '" loading="lazy">' +
+            '</div>' +
+            '<div class="product-body">' +
+              '<div class="badge-row"><span class="badge badge-green">' + escapeHtml(p.category || 'Wellness') + '</span></div>' +
+              '<h3>' + escapeHtml(p.name) + '</h3>' +
+              '<p>' + escapeHtml(p.description || '') + '</p>' +
+              '<div class="price-row"><span class="price-now">' + money(p.price_cents) + '</span></div>' +
+              '<button class="product-btn" data-buy-product-id="' + p.id + '" data-buy-product-price="' + money(p.price_cents) + '">Buy Now — ' + money(p.price_cents) + '</button>' +
+            '</div>' +
+          '</div>'
+        );
+      }).join('');
 
-      supabaseSelect('store_products', 'slug=eq.' + encodeURIComponent(slug) + '&select=id&active=eq.true')
-        .then(function (rows) {
-          if (!rows || !rows.length) throw new Error('That product is currently unavailable.');
-          payBtn.textContent = 'Redirecting…';
-          return startCheckout({
+      grid.querySelectorAll('[data-buy-product-id]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var productId = btn.getAttribute('data-buy-product-id');
+          var original = btn.textContent;
+          btn.disabled = true;
+          btn.textContent = 'Redirecting…';
+
+          startCheckout({
             kind: 'order',
-            order: {
-              customerName: details.name,
-              email: details.email,
-              phone: details.phone,
-              shippingAddress: { line1: details.address, city: details.city, postal_code: details.zip },
-              items: [{ product_id: rows[0].id, quantity: 1 }]
-            }
+            order: { items: [{ product_id: productId, quantity: 1 }] }
+          }).then(function (data) {
+            window.location.href = data.url;
+          }).catch(function (err) {
+            btn.disabled = false;
+            btn.textContent = original;
+            alert(err.message || 'Something went wrong starting checkout. Please try again.');
           });
-        })
-        .then(function (data) {
-          window.location.href = data.url;
-        })
-        .catch(function (err) {
-          payBtn.disabled = false;
-          payBtn.textContent = 'Continue to Secure Payment';
-          var errEl = document.getElementById('product-error');
-          errEl.textContent = err.message || 'Something went wrong. Please try again.';
-          errEl.classList.add('show');
         });
+      });
+    })
+    .catch(function () {
+      grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--neutral-n200);">Unable to load products right now. Please refresh the page.</p>';
     });
-  }
 }
 
 /* =========================================================

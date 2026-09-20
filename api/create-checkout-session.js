@@ -8,7 +8,7 @@
 // a different amount than what they're actually being charged.
 
 const Stripe = require('stripe');
-const { callRpc } = require('./_supabase');
+const { callRpc, select } = require('./_supabase');
 
 const ALLOWED_SITES = ['clinipausemd', 'drivanah'];
 const CONSULT_FEE_CENTS = 30000;
@@ -77,31 +77,52 @@ module.exports = async (req, res) => {
     }
 
     if (kind === 'order') {
-      const o = body.order || {};
-      const result = await callRpc('create_store_order', {
-        p_site: site,
-        p_customer_name: o.customerName,
-        p_email: o.email,
-        p_phone: o.phone || null,
-        p_shipping_address: o.shippingAddress || null,
-        p_items: o.items || []
-      });
+      // One-click buy: no pre-checkout form on our site at all. We only need
+      // to know which product(s) — Stripe's own hosted page collects the
+      // customer's email, name, and shipping address. The order row itself
+      // isn't created until the webhook confirms payment (create_paid_order),
+      // using the details Stripe captured plus prices looked up here from
+      // the database, never trusted from the client.
+      const items = Array.isArray(body.order && body.order.items) ? body.order.items : [];
+      if (!items.length) {
+        res.status(400).json({ error: 'No items to purchase' });
+        return;
+      }
+
+      const lineItems = [];
+      const metaItems = [];
+
+      for (const item of items) {
+        const quantity = Math.max(parseInt(item.quantity, 10) || 1, 1);
+        const rows = await select('store_products', `id=eq.${encodeURIComponent(item.product_id)}&select=id,name,price_cents,image_url&active=eq.true`);
+        const product = rows[0];
+        if (!product) {
+          res.status(400).json({ error: 'One of the selected products is unavailable' });
+          return;
+        }
+
+        lineItems.push({
+          price_data: {
+            currency: 'usd',
+            unit_amount: product.price_cents,
+            product_data: {
+              name: product.name,
+              images: product.image_url ? [product.image_url] : undefined
+            }
+          },
+          quantity
+        });
+        metaItems.push({ product_id: product.id, quantity });
+      }
 
       const session = await stripe.checkout.sessions.create({
         mode: 'payment',
         payment_method_types: ['card'],
-        customer_email: o.email,
+        phone_number_collection: { enabled: true },
         shipping_address_collection: { allowed_countries: ['US', 'CA'] },
-        line_items: [{
-          price_data: {
-            currency: 'usd',
-            unit_amount: result.amount_cents,
-            product_data: { name: 'CliniPause Order' }
-          },
-          quantity: 1
-        }],
-        metadata: { kind: 'order', record_id: result.id, site },
-        success_url: `${safeOrigin || 'https://nopausemd.vercel.app'}/shop.html?paid=1&order=${result.id}`,
+        line_items: lineItems,
+        metadata: { kind: 'order', site, items: JSON.stringify(metaItems) },
+        success_url: `${safeOrigin || 'https://nopausemd.vercel.app'}/shop.html?paid=1`,
         cancel_url: `${safeOrigin || 'https://nopausemd.vercel.app'}/shop.html?canceled=1`
       });
 
