@@ -95,6 +95,7 @@ document.addEventListener('DOMContentLoaded', function () {
   initLiveChat();
   initHeroEntrance();
   initScrollReveal();
+  initParallax();
   initHeroVideo();
   initNewsletterPopup();
 });
@@ -133,7 +134,8 @@ function initScrollReveal() {
   var selectors = [
     '.section-head', '.service-card', '.approach-card', '.topic-card',
     '.product-card', '.split-copy', '.split-image', '.feature-banner-image',
-    '.faq-item', '.bundle-strip'
+    '.faq-item', '.bundle-strip', '.footer-col', '.footer-brand',
+    '.eyebrow', '.leaf-motif', '.app-badges'
   ];
   var targets = document.querySelectorAll(selectors.join(','));
   if (!targets.length) return;
@@ -158,6 +160,33 @@ function initScrollReveal() {
   }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
 
   targets.forEach(function (el) { observer.observe(el); });
+}
+
+/* =========================================================
+   Subtle parallax — hero/feature images drift slightly as the
+   page scrolls, for a livelier feel. Skipped entirely when the
+   visitor prefers reduced motion.
+   ========================================================= */
+function initParallax() {
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var layers = document.querySelectorAll('[data-parallax]');
+  if (!layers.length) return;
+
+  var ticking = false;
+  function update() {
+    var vh = window.innerHeight;
+    layers.forEach(function (el) {
+      var rect = el.getBoundingClientRect();
+      var center = rect.top + rect.height / 2;
+      var offset = ((center - vh / 2) / vh) * -18;
+      el.style.transform = 'translateY(' + offset.toFixed(1) + 'px)';
+    });
+    ticking = false;
+  }
+  window.addEventListener('scroll', function () {
+    if (!ticking) { window.requestAnimationFrame(update); ticking = true; }
+  }, { passive: true });
+  update();
 }
 
 /* =========================================================
@@ -548,12 +577,40 @@ function renderProductGrid(grid, products) {
   });
 }
 
+function skeletonProductCards(count) {
+  var card =
+    '<div class="product-card skeleton-card">' +
+      '<div class="skeleton skeleton-image"></div>' +
+      '<div class="product-body">' +
+        '<div class="skeleton skeleton-line" style="width:40%;"></div>' +
+        '<div class="skeleton skeleton-line" style="width:75%;height:20px;"></div>' +
+        '<div class="skeleton skeleton-line" style="width:100%;"></div>' +
+        '<div class="skeleton skeleton-line" style="width:60%;"></div>' +
+        '<div class="skeleton skeleton-line" style="width:45%;height:24px;"></div>' +
+        '<div class="skeleton skeleton-line" style="width:100%;height:44px;border-radius:999px;"></div>' +
+      '</div>' +
+    '</div>';
+  return new Array(count || 3).fill(card).join('');
+}
+
 function loadProducts(selectorId, limit) {
   var grid = document.getElementById(selectorId);
   if (!grid) return;
 
+  grid.innerHTML = skeletonProductCards(limit || 3);
+
   var query = 'select=id,name,description,price_cents,image_url,category&active=eq.true&order=sort_order.asc';
   if (limit) query += '&limit=' + encodeURIComponent(limit);
+
+  function showRetryState(offline) {
+    grid.innerHTML =
+      '<div class="products-error" style="grid-column:1/-1;">' +
+        '<p>' + (offline ? "You're offline — reconnect to load products." : 'Unable to load products right now.') + '</p>' +
+        '<button type="button" class="btn btn-outline" data-retry-products>Try again</button>' +
+      '</div>';
+    var retryBtn = grid.querySelector('[data-retry-products]');
+    if (retryBtn) retryBtn.addEventListener('click', function () { loadProducts(selectorId, limit); });
+  }
 
   supabaseSelect('store_products', query)
     .then(function (products) {
@@ -564,7 +621,7 @@ function loadProducts(selectorId, limit) {
       renderProductGrid(grid, products);
     })
     .catch(function () {
-      grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--neutral-n200);">Unable to load products right now. Please refresh the page.</p>';
+      showRetryState(typeof navigator !== 'undefined' && navigator.onLine === false);
     });
 
   initProductDetailModal();
@@ -924,6 +981,9 @@ function initLiveChat() {
   var TOKEN_KEY = 'clinipause_chat_token';
   var CONV_KEY = 'clinipause_chat_conversation';
   var pollTimer = null;
+  var backgroundPollTimer = null;
+  var lastSeenCount = 0;
+  var isOpen = false;
 
   function getToken() {
     var token = localStorage.getItem(TOKEN_KEY);
@@ -938,14 +998,17 @@ function initLiveChat() {
   bubble.type = 'button';
   bubble.id = 'chat-bubble';
   bubble.setAttribute('aria-label', 'Open live chat');
-  bubble.innerHTML = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+  bubble.innerHTML = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span id="chat-unread-dot" aria-hidden="true"></span>';
   document.body.appendChild(bubble);
 
   var panel = document.createElement('div');
   panel.id = 'chat-panel';
   panel.innerHTML =
     '<div class="chat-panel-header">' +
-      '<span>Chat with CliniPause</span>' +
+      '<div class="chat-panel-header-brand">' +
+        '<img src="assets/images/favicon-32.png" alt="">' +
+        '<span>Chat with CliniPause</span>' +
+      '</div>' +
       '<button type="button" id="chat-panel-close" aria-label="Close chat">&times;</button>' +
     '</div>' +
     '<div class="chat-panel-body" id="chat-panel-body">' +
@@ -972,13 +1035,19 @@ function initLiveChat() {
     });
   }
 
+  function showUnreadDot() { bubble.classList.add('has-unread'); }
+  function hideUnreadDot() { bubble.classList.remove('has-unread'); }
+
   function open() {
     panel.classList.add('open');
+    isOpen = true;
+    hideUnreadDot();
     var convId = localStorage.getItem(CONV_KEY);
     if (convId) showThread(convId);
   }
   function close() {
     panel.classList.remove('open');
+    isOpen = false;
     if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
   }
 
@@ -1003,31 +1072,56 @@ function initLiveChat() {
       p_site: STOREFRONT_SITE, p_visitor_token: getToken(), p_visitor_name: name, p_visitor_email: email || null
     }).then(function (convId) {
       localStorage.setItem(CONV_KEY, convId);
+      showThread(convId, [{ id: 'local-optimistic', sender_is_admin: false, body: message, pending: true }]);
       return supabaseRpc('send_chat_message', { p_conversation_id: convId, p_visitor_token: getToken(), p_body: message });
     }).then(function () {
-      showThread(localStorage.getItem(CONV_KEY));
+      var convId = localStorage.getItem(CONV_KEY);
+      fetchMessages(convId).then(function () { startBackgroundPolling(convId); });
     }).catch(function () {
       submitBtn.disabled = false;
       submitBtn.textContent = 'Start Chat';
     });
   });
 
-  function showThread(convId) {
+  function renderMessages(msgs) {
+    var box = document.getElementById('chat-panel-messages');
+    box.innerHTML = (msgs || []).map(function (m) {
+      if (m.sender_is_admin) {
+        return '<div class="chat-panel-row from-admin">' +
+          '<img class="chat-avatar" src="assets/images/favicon-32.png" alt="CliniPause">' +
+          '<div class="chat-panel-bubble from-admin">' + escapeHtml(m.body) + '</div>' +
+        '</div>';
+      }
+      return '<div class="chat-panel-row from-visitor">' +
+        '<div class="chat-panel-bubble from-visitor' + (m.pending ? ' pending' : '') + '">' + escapeHtml(m.body) + '</div>' +
+      '</div>';
+    }).join('');
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function showThread(convId, optimisticMsgs) {
     document.querySelector('.chat-panel-intro').style.display = 'none';
     document.getElementById('chat-panel-messages').style.display = 'flex';
     document.getElementById('chat-panel-form').style.display = 'flex';
+    if (optimisticMsgs) renderMessages(optimisticMsgs);
     fetchMessages(convId);
     if (pollTimer) clearInterval(pollTimer);
     pollTimer = setInterval(function () { fetchMessages(convId); }, 3000);
   }
 
   function fetchMessages(convId) {
-    supabaseRpc('get_chat_messages', { p_conversation_id: convId, p_visitor_token: getToken() }).then(function (msgs) {
-      var box = document.getElementById('chat-panel-messages');
-      box.innerHTML = (msgs || []).map(function (m) {
-        return '<div class="chat-panel-bubble ' + (m.sender_is_admin ? 'from-admin' : 'from-visitor') + '">' + escapeHtml(m.body) + '</div>';
-      }).join('');
-      box.scrollTop = box.scrollHeight;
+    return supabaseRpc('get_chat_messages', { p_conversation_id: convId, p_visitor_token: getToken() }).then(function (msgs) {
+      msgs = msgs || [];
+      if (isOpen && document.getElementById('chat-panel-messages').style.display !== 'none') {
+        renderMessages(msgs);
+      }
+      if (msgs.length > lastSeenCount) {
+        var newOnes = msgs.slice(lastSeenCount);
+        var hasNewAdminReply = newOnes.some(function (m) { return m.sender_is_admin; });
+        if (hasNewAdminReply && !isOpen) showUnreadDot();
+      }
+      lastSeenCount = msgs.length;
+      return msgs;
     }).catch(function () { /* transient — next poll will retry */ });
   }
 
@@ -1038,9 +1132,36 @@ function initLiveChat() {
     var convId = localStorage.getItem(CONV_KEY);
     if (!body || !convId) return;
     input.value = '';
+
+    var box = document.getElementById('chat-panel-messages');
+    var optimistic = document.createElement('div');
+    optimistic.className = 'chat-panel-row from-visitor';
+    optimistic.innerHTML = '<div class="chat-panel-bubble from-visitor pending">' + escapeHtml(body) + '</div>';
+    box.appendChild(optimistic);
+    box.scrollTop = box.scrollHeight;
+
     supabaseRpc('send_chat_message', { p_conversation_id: convId, p_visitor_token: getToken(), p_body: body })
-      .then(function () { fetchMessages(convId); });
+      .then(function () { fetchMessages(convId); })
+      .catch(function () {
+        var b = optimistic.querySelector('.chat-panel-bubble');
+        b.classList.add('failed');
+        b.setAttribute('title', 'Not sent — check your connection');
+      });
   });
+
+  // Keep checking for admin replies in the background (even while the
+  // panel is closed) so the unread dot lights up like a real chat app.
+  function startBackgroundPolling(convId) {
+    if (backgroundPollTimer) clearInterval(backgroundPollTimer);
+    backgroundPollTimer = setInterval(function () {
+      if (!isOpen) fetchMessages(convId);
+    }, 8000);
+  }
+
+  var existingConvId = localStorage.getItem(CONV_KEY);
+  if (existingConvId) {
+    fetchMessages(existingConvId).then(function () { startBackgroundPolling(existingConvId); });
+  }
 }
 
 /* =========================================================
