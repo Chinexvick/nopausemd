@@ -64,6 +64,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
+  initCart();
   initBookingModal();
   initShopProducts();
   showPaymentReturnBanner();
@@ -71,6 +72,7 @@ document.addEventListener('DOMContentLoaded', function () {
   initLiveChat();
   initHeroEntrance();
   initScrollReveal();
+  initHeroVideo();
 });
 
 /* =========================================================
@@ -81,7 +83,7 @@ function initHeroEntrance() {
   var groups = [
     document.querySelectorAll('.home-hero-copy > *'),
     document.querySelectorAll('.page-hero-content > *'),
-    document.querySelectorAll('.home-hero-gallery .gallery-card')
+    document.querySelectorAll('.home-hero-video')
   ];
 
   groups.forEach(function (nodeList) {
@@ -144,18 +146,35 @@ function showPaymentReturnBanner() {
   var params = new URLSearchParams(window.location.search);
   if (!params.has('paid') && !params.has('canceled')) return;
 
-  var banner = document.createElement('div');
-  banner.style.cssText = 'position:sticky;top:0;z-index:200;padding:14px 20px;text-align:center;font-size:15px;font-weight:500;';
-  if (params.has('paid')) {
-    banner.style.background = '#eef8e7';
-    banner.style.color = '#397f37';
-    banner.textContent = "Payment received — thank you! We'll be in touch shortly to confirm the details.";
-  } else {
-    banner.style.background = '#fbe6df';
-    banner.style.color = '#8b3a2b';
-    banner.textContent = 'Checkout was canceled — no payment was taken. You can try again anytime.';
+  var overlay = document.createElement('div');
+  overlay.className = 'booking-overlay open';
+  var paid = params.has('paid');
+
+  overlay.innerHTML =
+    '<div class="booking-modal" role="dialog" aria-modal="true">' +
+      '<button type="button" class="booking-close" aria-label="Close">&times;</button>' +
+      '<div class="success-modal-body">' +
+        '<div class="checkmark">' + (paid ? '&check;' : '&times;') + '</div>' +
+        '<h3 class="booking-title">' + (paid ? 'Payment Successful!' : 'Checkout Canceled') + '</h3>' +
+        '<p class="booking-sub">' + (paid
+          ? "Thank you — your order is confirmed. A receipt has been sent to your email, and we'll be in touch with any next steps."
+          : 'No payment was taken. You can pick up where you left off any time.') + '</p>' +
+        '<button type="button" class="btn btn-primary" id="payment-return-done" style="margin-top:10px;">Done</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+  document.body.style.overflow = 'hidden';
+
+  function close() {
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+    overlay.remove();
   }
-  document.body.insertBefore(banner, document.body.firstChild);
+  overlay.querySelector('.booking-close').addEventListener('click', close);
+  overlay.querySelector('#payment-return-done').addEventListener('click', close);
+  overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
+
+  if (paid && window.CliniCart) window.CliniCart.clear();
 
   var url = new URL(window.location.href);
   url.searchParams.delete('paid');
@@ -449,25 +468,23 @@ function initBookingModal() {
   }
 }
 
+function escapeHtml(str) {
+  return String(str == null ? '' : str).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+function money(cents) { return '$' + (Number(cents || 0) / 100).toFixed(2); }
+
 /* =========================================================
    Shop — products are never hardcoded. They're loaded from
    store_products (managed in the admin dashboard: title,
-   description, price, image) and rendered here. "Buy Now" goes
-   straight to Stripe Checkout in one click — no form on our
-   site at all. Stripe's own hosted page collects email, name,
-   and shipping address; the order itself is only created (as
-   already-paid) once the webhook confirms the charge.
+   description, price, image) and rendered here. "Add to Cart"
+   just adds a line to the cart (see initCart) — checkout for
+   everything in the cart happens once, from the cart drawer.
    ========================================================= */
 function initShopProducts() {
   var grid = document.getElementById('shop-product-grid');
   if (!grid) return;
-
-  function escapeHtml(str) {
-    return String(str == null ? '' : str).replace(/[&<>"']/g, function (c) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-    });
-  }
-  function money(cents) { return '$' + (Number(cents || 0) / 100).toFixed(2); }
 
   supabaseSelect('store_products', 'select=id,name,description,price_cents,image_url,category&active=eq.true&order=sort_order.asc')
     .then(function (products) {
@@ -476,47 +493,314 @@ function initShopProducts() {
         return;
       }
 
+      var byId = {};
+      products.forEach(function (p) { byId[p.id] = p; });
+
       grid.innerHTML = products.map(function (p) {
         var isBook = p.category === 'book';
         return (
           '<div class="product-card">' +
-            '<div class="product-image"' + (isBook ? ' style="background:#0c211b;"' : '') + '>' +
+            '<div class="product-image" data-view-product-id="' + p.id + '"' + (isBook ? ' style="background:#0c211b;"' : '') + '>' +
               '<img src="' + escapeHtml(p.image_url || '') + '" alt="' + escapeHtml(p.name) + '" loading="lazy">' +
             '</div>' +
             '<div class="product-body">' +
               '<div class="badge-row"><span class="badge badge-green">' + escapeHtml(p.category || 'Wellness') + '</span></div>' +
-              '<h3>' + escapeHtml(p.name) + '</h3>' +
+              '<h3 data-view-product-id="' + p.id + '" style="cursor:pointer;">' + escapeHtml(p.name) + '</h3>' +
               '<p>' + escapeHtml(p.description || '') + '</p>' +
               '<div class="price-row"><span class="price-now">' + money(p.price_cents) + '</span></div>' +
-              '<button class="product-btn" data-buy-product-id="' + p.id + '" data-buy-product-price="' + money(p.price_cents) + '">Buy Now — ' + money(p.price_cents) + '</button>' +
+              '<button class="product-btn" data-add-to-cart-id="' + p.id + '">Add to Cart</button>' +
             '</div>' +
           '</div>'
         );
       }).join('');
 
-      grid.querySelectorAll('[data-buy-product-id]').forEach(function (btn) {
+      grid.querySelectorAll('[data-add-to-cart-id]').forEach(function (btn) {
         btn.addEventListener('click', function () {
-          var productId = btn.getAttribute('data-buy-product-id');
+          var product = byId[btn.getAttribute('data-add-to-cart-id')];
+          if (!product) return;
+          window.CliniCart.add(product);
           var original = btn.textContent;
+          btn.textContent = 'Added ✓';
           btn.disabled = true;
-          btn.textContent = 'Redirecting…';
+          setTimeout(function () { btn.textContent = original; btn.disabled = false; }, 1200);
+        });
+      });
 
-          startCheckout({
-            kind: 'order',
-            order: { items: [{ product_id: productId, quantity: 1 }] }
-          }).then(function (data) {
-            window.location.href = data.url;
-          }).catch(function (err) {
-            btn.disabled = false;
-            btn.textContent = original;
-            alert(err.message || 'Something went wrong starting checkout. Please try again.');
-          });
+      grid.querySelectorAll('[data-view-product-id]').forEach(function (el) {
+        el.addEventListener('click', function () {
+          var product = byId[el.getAttribute('data-view-product-id')];
+          if (product) window.openProductDetail(product);
         });
       });
     })
     .catch(function () {
       grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:var(--neutral-n200);">Unable to load products right now. Please refresh the page.</p>';
     });
+
+  initProductDetailModal();
+}
+
+/* =========================================================
+   Product detail modal — clicking a product's image or title
+   expands it with the full description and an Add to Cart button.
+   ========================================================= */
+function initProductDetailModal() {
+  if (document.getElementById('product-detail-modal')) return;
+
+  var overlay = document.createElement('div');
+  overlay.className = 'booking-overlay';
+  overlay.id = 'product-detail-modal';
+  overlay.innerHTML =
+    '<div class="booking-modal" role="dialog" aria-modal="true" style="max-width:700px;">' +
+      '<button type="button" class="booking-close" data-detail-close aria-label="Close">&times;</button>' +
+      '<div class="product-modal-body" id="product-modal-content"></div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+
+  function close() {
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay || e.target.hasAttribute('data-detail-close')) close();
+  });
+
+  window.openProductDetail = function (product) {
+    var isBook = product.category === 'book';
+    document.getElementById('product-modal-content').innerHTML =
+      '<div class="product-modal-image"' + (isBook ? ' style="background:#0c211b;"' : '') + '>' +
+        '<img src="' + escapeHtml(product.image_url || '') + '" alt="' + escapeHtml(product.name) + '">' +
+      '</div>' +
+      '<div class="product-modal-info">' +
+        '<span class="badge badge-green" style="align-self:flex-start;">' + escapeHtml(product.category || 'Wellness') + '</span>' +
+        '<h3>' + escapeHtml(product.name) + '</h3>' +
+        '<p>' + escapeHtml(product.description || '') + '</p>' +
+        '<div class="product-modal-price">' + money(product.price_cents) + '</div>' +
+        '<button type="button" class="btn btn-primary" id="detail-add-to-cart">Add to Cart</button>' +
+      '</div>';
+
+    document.getElementById('detail-add-to-cart').addEventListener('click', function () {
+      window.CliniCart.add(product);
+      this.textContent = 'Added ✓';
+      var self = this;
+      setTimeout(function () { self.textContent = 'Add to Cart'; }, 1200);
+    });
+
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  };
+}
+
+/* =========================================================
+   Cart — persisted in localStorage, shared across all pages.
+   Adds a cart icon + count badge to the navbar and a slide-out
+   drawer. Checkout sends every line item to Stripe in one
+   session; prices are still always re-verified server-side.
+   ========================================================= */
+function initCart() {
+  var STORAGE_KEY = 'clinipause_cart';
+
+  function readCart() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+    catch (e) { return []; }
+  }
+  function writeCart(items) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch (e) { /* ignore */ }
+    renderDrawer();
+    updateBadge();
+  }
+
+  var navCta = document.querySelector('.nav-cta');
+  if (navCta && navCta.parentElement) {
+    var cartBtn = document.createElement('button');
+    cartBtn.type = 'button';
+    cartBtn.className = 'cart-btn';
+    cartBtn.setAttribute('aria-label', 'Open cart');
+    cartBtn.innerHTML =
+      '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>' +
+      '<span class="cart-badge" id="cart-badge">0</span>';
+    navCta.parentElement.insertBefore(cartBtn, navCta);
+    cartBtn.addEventListener('click', openDrawer);
+  }
+
+  var overlay = document.createElement('div');
+  overlay.className = 'cart-drawer-overlay';
+  overlay.id = 'cart-drawer-overlay';
+  document.body.appendChild(overlay);
+
+  var drawer = document.createElement('div');
+  drawer.className = 'cart-drawer';
+  drawer.id = 'cart-drawer';
+  drawer.innerHTML =
+    '<div class="cart-drawer-header"><h3>Your Cart</h3><button type="button" class="cart-drawer-close" aria-label="Close cart">&times;</button></div>' +
+    '<div class="cart-drawer-items" id="cart-drawer-items"></div>' +
+    '<div class="cart-drawer-footer" id="cart-drawer-footer" style="display:none;">' +
+      '<div class="cart-subtotal"><span>Subtotal</span><span id="cart-subtotal-amount">$0.00</span></div>' +
+      '<p class="booking-error" id="cart-checkout-error">Something went wrong. Please try again.</p>' +
+      '<button type="button" class="btn btn-primary" id="cart-checkout-btn" style="width:100%;">Checkout</button>' +
+    '</div>';
+  document.body.appendChild(drawer);
+
+  function openDrawer() {
+    overlay.classList.add('open');
+    drawer.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeDrawer() {
+    overlay.classList.remove('open');
+    drawer.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  overlay.addEventListener('click', closeDrawer);
+  drawer.querySelector('.cart-drawer-close').addEventListener('click', closeDrawer);
+
+  function updateBadge() {
+    var count = readCart().reduce(function (sum, i) { return sum + i.quantity; }, 0);
+    document.querySelectorAll('#cart-badge').forEach(function (badge) {
+      badge.textContent = count;
+      badge.classList.toggle('show', count > 0);
+    });
+  }
+
+  function renderDrawer() {
+    var items = readCart();
+    var itemsEl = document.getElementById('cart-drawer-items');
+    var footerEl = document.getElementById('cart-drawer-footer');
+    if (!itemsEl) return;
+
+    if (!items.length) {
+      itemsEl.innerHTML = '<div class="cart-empty">Your cart is empty.</div>';
+      footerEl.style.display = 'none';
+      return;
+    }
+
+    footerEl.style.display = 'block';
+    itemsEl.innerHTML = items.map(function (item, i) {
+      return (
+        '<div class="cart-item">' +
+          '<div class="cart-item-img"><img src="' + escapeHtml(item.image_url || '') + '" alt=""></div>' +
+          '<div class="cart-item-info">' +
+            '<h4>' + escapeHtml(item.name) + '</h4>' +
+            '<div class="price">' + money(item.price_cents) + '</div>' +
+            '<div class="cart-qty">' +
+              '<button type="button" data-qty-down="' + i + '">&minus;</button>' +
+              '<span>' + item.quantity + '</span>' +
+              '<button type="button" data-qty-up="' + i + '">+</button>' +
+            '</div>' +
+            '<button type="button" class="cart-item-remove" data-remove="' + i + '">Remove</button>' +
+          '</div>' +
+        '</div>'
+      );
+    }).join('');
+
+    var subtotal = items.reduce(function (sum, i) { return sum + i.price_cents * i.quantity; }, 0);
+    document.getElementById('cart-subtotal-amount').textContent = money(subtotal);
+
+    itemsEl.querySelectorAll('[data-qty-up]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var items = readCart();
+        items[+btn.getAttribute('data-qty-up')].quantity += 1;
+        writeCart(items);
+      });
+    });
+    itemsEl.querySelectorAll('[data-qty-down]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var items = readCart();
+        var idx = +btn.getAttribute('data-qty-down');
+        items[idx].quantity -= 1;
+        if (items[idx].quantity <= 0) items.splice(idx, 1);
+        writeCart(items);
+      });
+    });
+    itemsEl.querySelectorAll('[data-remove]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var items = readCart();
+        items.splice(+btn.getAttribute('data-remove'), 1);
+        writeCart(items);
+      });
+    });
+  }
+
+  drawer.querySelector('#cart-checkout-btn').addEventListener('click', function () {
+    var items = readCart();
+    if (!items.length) return;
+    var btn = this;
+    var errEl = document.getElementById('cart-checkout-error');
+    errEl.classList.remove('show');
+    btn.disabled = true;
+    btn.textContent = 'Redirecting…';
+
+    startCheckout({
+      kind: 'order',
+      order: { items: items.map(function (i) { return { product_id: i.id, quantity: i.quantity }; }) }
+    }).then(function (data) {
+      window.location.href = data.url;
+    }).catch(function (err) {
+      btn.disabled = false;
+      btn.textContent = 'Checkout';
+      errEl.textContent = err.message || 'Something went wrong. Please try again.';
+      errEl.classList.add('show');
+    });
+  });
+
+  window.CliniCart = {
+    add: function (product, quantity) {
+      quantity = quantity || 1;
+      var items = readCart();
+      var existing = items.find(function (i) { return i.id === product.id; });
+      if (existing) existing.quantity += quantity;
+      else items.push({ id: product.id, name: product.name, price_cents: product.price_cents, image_url: product.image_url, quantity: quantity });
+      writeCart(items);
+    },
+    clear: function () { writeCart([]); },
+    open: openDrawer
+  };
+
+  renderDrawer();
+  updateBadge();
+}
+
+/* =========================================================
+   Home hero video — opens a lightbox on click. Drop a real
+   video file at assets/video/home-intro.mp4 (or swap the
+   <video> below for a YouTube/Vimeo <iframe>) to go live —
+   until then it shows a friendly placeholder.
+   ========================================================= */
+function initHeroVideo() {
+  var trigger = document.getElementById('home-hero-video');
+  if (!trigger) return;
+
+  var overlay = document.createElement('div');
+  overlay.className = 'video-lightbox';
+  overlay.innerHTML =
+    '<div class="video-lightbox-inner">' +
+      '<button type="button" class="video-lightbox-close" aria-label="Close video">&times;</button>' +
+      '<div id="video-lightbox-content"></div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+
+  function close() {
+    overlay.classList.remove('open');
+    document.getElementById('video-lightbox-content').innerHTML = '';
+    document.body.style.overflow = '';
+  }
+  overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
+  overlay.querySelector('.video-lightbox-close').addEventListener('click', close);
+
+  trigger.addEventListener('click', function () {
+    var content = document.getElementById('video-lightbox-content');
+    var video = document.createElement('video');
+    video.src = 'assets/video/home-intro.mp4';
+    video.controls = true;
+    video.autoplay = true;
+    video.playsInline = true;
+    video.addEventListener('error', function () {
+      content.innerHTML = '<div class="video-lightbox-fallback">Our welcome video is coming soon.<br>Check back shortly!</div>';
+    });
+    content.appendChild(video);
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  });
 }
 
 /* =========================================================
