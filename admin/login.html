@@ -33,13 +33,40 @@
   }
   .login-submit:disabled { opacity: 0.7; cursor: not-allowed; }
   .login-note { text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 20px; }
+  .login-card.super-mode { border-color: var(--amber); }
+  .login-card.super-mode .login-logo span { color: var(--amber); }
+  .login-card.super-mode .login-submit { background: var(--amber); }
+  .super-badge {
+    display: none; align-items: center; gap: 6px; font-size: 11px; font-weight: 700;
+    letter-spacing: 0.04em; text-transform: uppercase; color: var(--amber); background: var(--amber-bg);
+    border-radius: var(--radius-sm); padding: 4px 10px; margin-bottom: 14px; width: fit-content;
+  }
+  .super-badge.show { display: flex; }
+  .toggle-row {
+    display: flex; align-items: center; gap: 8px; margin: 4px 0 20px; font-size: 13px; color: var(--text-dark);
+  }
+  .toggle-row input { width: 15px; height: 15px; accent-color: var(--amber); cursor: pointer; }
+  .toggle-row label { cursor: pointer; }
+  .forgot-link {
+    display: inline-block; background: none; border: none; padding: 0; margin: 10px 0 0;
+    font-size: 13px; color: var(--blue); cursor: pointer; text-decoration: underline;
+  }
+  .forgot-section { display: none; margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--border); }
+  .forgot-section.show { display: block; }
+  .forgot-section p { font-size: 13px; color: var(--text-muted); margin: 0 0 12px; }
+  .forgot-confirm {
+    display: none; background: var(--green-bg); color: var(--green); font-size: 13px;
+    padding: 10px 14px; border-radius: var(--radius-sm); margin-top: 12px;
+  }
+  .forgot-confirm.show { display: block; }
 </style>
 </head>
 <body>
 
-<div class="login-card">
+<div class="login-card" id="login-card">
+  <span class="super-badge" id="super-badge">&#9733; Super Admin Login</span>
   <div class="login-logo"><span class="logo-dot"></span><span>CliniPauseMD</span></div>
-  <p class="login-sub">Sign in to the admin dashboard. Accounts are provisioned by the team — there is no self-signup.</p>
+  <p class="login-sub" id="login-sub">Sign in to the admin dashboard. Accounts are provisioned by the team — there is no self-signup.</p>
 
   <p class="login-error" id="login-error">Incorrect email or password.</p>
 
@@ -52,8 +79,26 @@
       <label>Password</label>
       <input type="password" name="password" autocomplete="current-password" required>
     </div>
+    <div class="toggle-row">
+      <input type="checkbox" id="super-admin-toggle">
+      <label for="super-admin-toggle">Log in as Super Admin</label>
+    </div>
     <button type="submit" class="login-submit" id="login-submit">Sign In</button>
   </form>
+
+  <button type="button" class="forgot-link" id="forgot-link">Forgot password?</button>
+
+  <div class="forgot-section" id="forgot-section">
+    <p>Enter your admin email and we'll send you a reset link if an account exists.</p>
+    <form id="forgot-form">
+      <div class="login-field">
+        <label>Email</label>
+        <input type="email" name="forgot-email" required>
+      </div>
+      <button type="submit" class="login-submit" id="forgot-submit" style="background: var(--text-dark);">Send Reset Link</button>
+    </form>
+    <p class="forgot-confirm" id="forgot-confirm">If an account exists for that email, a reset link has been sent.</p>
+  </div>
 
   <p class="login-note">CliniPauseMD internal admin access only.</p>
 </div>
@@ -86,6 +131,53 @@
     errorEl.classList.add('show');
   }
 
+  var superToggle = document.getElementById('super-admin-toggle');
+  var loginCard = document.getElementById('login-card');
+  var superBadge = document.getElementById('super-badge');
+  var loginSub = document.getElementById('login-sub');
+  var normalSub = loginSub.textContent;
+
+  superToggle.addEventListener('change', function () {
+    var on = superToggle.checked;
+    loginCard.classList.toggle('super-mode', on);
+    superBadge.classList.toggle('show', on);
+    loginSub.textContent = on
+      ? 'Sign in with your super admin account for live revenue, team, and audit access.'
+      : normalSub;
+  });
+
+  var forgotLink = document.getElementById('forgot-link');
+  var forgotSection = document.getElementById('forgot-section');
+  var forgotForm = document.getElementById('forgot-form');
+  var forgotConfirm = document.getElementById('forgot-confirm');
+  var forgotSubmit = document.getElementById('forgot-submit');
+
+  forgotLink.addEventListener('click', function () {
+    forgotSection.classList.toggle('show');
+  });
+
+  forgotForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var fd = new FormData(e.target);
+    var email = (fd.get('forgot-email') || '').trim();
+    forgotSubmit.disabled = true;
+    forgotSubmit.textContent = 'Sending…';
+    forgotConfirm.classList.remove('show');
+
+    var redirectTo = location.origin + location.pathname.replace(/login\.html$/, '') + 'reset-password.html';
+
+    sb.auth.resetPasswordForEmail(email, { redirectTo: redirectTo }).catch(function () {
+      // Intentionally ignored — the confirmation message never reveals
+      // whether the email exists or the call errored, to avoid user
+      // enumeration.
+    }).finally(function () {
+      forgotSubmit.disabled = false;
+      forgotSubmit.textContent = 'Send Reset Link';
+      forgotConfirm.classList.add('show');
+      forgotForm.reset();
+    });
+  });
+
   if (typeof sb === 'undefined') {
     errorEl.textContent = 'Could not load the sign-in service. Check your connection and reload the page.';
     errorEl.classList.add('show');
@@ -113,6 +205,8 @@
     submitBtn.disabled = true;
     submitBtn.textContent = 'Signing in…';
 
+    var wantsSuperAdmin = superToggle.checked;
+
     sb.auth.signInWithPassword({ email: email, password: password }).then(function (result) {
       if (result.error || !result.data.session) throw new Error('bad_credentials');
       return sb.from('store_admins').select('id').eq('id', result.data.session.user.id).maybeSingle();
@@ -123,7 +217,25 @@
           errorEl.classList.add('show');
         });
       }
-      location.replace(safeNextUrl());
+
+      if (!wantsSuperAdmin) {
+        location.replace(safeNextUrl());
+        return;
+      }
+
+      // The toggle only picks which branch to take after a real session is
+      // established — the actual authorization boundary is this server-side
+      // RPC (backed by the super_admins table / is_super_admin() function),
+      // never the client-side checkbox state.
+      return sb.rpc('is_super_admin').then(function (superRes) {
+        if (superRes.error || superRes.data !== true) {
+          return sb.auth.signOut().then(function () {
+            errorEl.textContent = 'This account does not have super admin access.';
+            errorEl.classList.add('show');
+          });
+        }
+        location.replace('super-admin-revenue.html');
+      });
     }).catch(function () {
       errorEl.textContent = 'Incorrect email or password.';
       errorEl.classList.add('show');
