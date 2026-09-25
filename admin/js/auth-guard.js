@@ -30,7 +30,14 @@
           return;
         }
         window.CURRENT_ADMIN = res.data;
-        revealDashboard(res.data);
+
+        return sb.rpc('is_super_admin').then(function (superRes) {
+          window.CURRENT_ADMIN.isSuperAdmin = superRes.data === true;
+          revealDashboard(window.CURRENT_ADMIN);
+        }).catch(function () {
+          window.CURRENT_ADMIN.isSuperAdmin = false;
+          revealDashboard(window.CURRENT_ADMIN);
+        });
       });
   }).catch(function () {
     goToLogin('client_error');
@@ -62,6 +69,11 @@
 
     injectMobileNav();
     injectLogout();
+
+    if (!admin.isSuperAdmin) {
+      var superNavGroup = document.getElementById('super-admin-nav-group');
+      if (superNavGroup) superNavGroup.style.display = 'none';
+    }
 
     document.documentElement.classList.remove('auth-pending');
   }
