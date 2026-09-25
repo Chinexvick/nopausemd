@@ -55,7 +55,8 @@
       return {
         type: 'booking', id: b.id, site: b.site, name: b.full_name, email: b.email, phone: b.phone,
         reason: b.reason, appointment_date: b.appointment_date, appointment_time: b.appointment_time,
-        amount_cents: b.amount_cents, paid: b.paid, status: b.status, created_at: b.created_at, paid_at: b.paid_at
+        amount_cents: b.amount_cents, paid: b.paid, status: b.status, created_at: b.created_at, paid_at: b.paid_at,
+        stripe_payment_intent_id: b.stripe_payment_intent_id, stripe_checkout_session_id: b.stripe_checkout_session_id
       };
     });
 
@@ -64,7 +65,9 @@
         type: 'order', id: o.id, site: o.site, name: o.customer_name, email: o.email, phone: o.phone,
         items: o.store_order_items, shipping_address: o.shipping_address,
         amount_cents: o.amount_cents, paid: o.paid, status: o.status, created_at: o.created_at, paid_at: o.paid_at,
-        tracking_carrier: o.tracking_carrier, tracking_number: o.tracking_number, tracking_status: o.tracking_status
+        tracking_carrier: o.tracking_carrier, tracking_number: o.tracking_number, tracking_status: o.tracking_status,
+        is_recurring: o.is_recurring,
+        stripe_payment_intent_id: o.stripe_payment_intent_id, stripe_checkout_session_id: o.stripe_checkout_session_id
       };
     });
 
@@ -117,6 +120,11 @@
         var key = row.getAttribute('data-key');
         openIds[key] = !openIds[key];
         row.classList.toggle('open', openIds[key]);
+
+        if (openIds[key]) {
+          var stripeBlock = row.querySelector('[data-stripe-block]');
+          if (stripeBlock) loadStripeDetails(stripeBlock, stripeBlock.getAttribute('data-stripe-block'));
+        }
       });
     });
 
@@ -185,7 +193,66 @@
         '</div>';
     }
 
-    return '<div class="order-detail-grid">' + left + right + '</div>';
+    var stripeBlock = '';
+    if (r.stripe_payment_intent_id) {
+      stripeBlock =
+        '<div class="order-detail-block" data-stripe-block="' + r.stripe_payment_intent_id + '"><h4>Stripe Payment</h4>' +
+        '<p class="stripe-detail-loading">Loading payment details…</p>' +
+        '</div>';
+    } else if (r.stripe_checkout_session_id) {
+      stripeBlock =
+        '<div class="order-detail-block"><h4>Stripe Payment</h4>' +
+        '<p style="color:var(--text-muted);">Checkout session was created but never completed.</p>' +
+        '</div>';
+    }
+
+    return '<div class="order-detail-grid">' + left + right + '</div>' + stripeBlock;
+  }
+
+  var stripeDetailCache = {};
+
+  function moneyFromCents(cents, currency) {
+    return '$' + (Number(cents || 0) / 100).toFixed(2) + ' ' + String(currency || 'usd').toUpperCase();
+  }
+
+  async function loadStripeDetails(container, paymentIntentId) {
+    if (stripeDetailCache[paymentIntentId]) {
+      renderStripeDetails(container, stripeDetailCache[paymentIntentId]);
+      return;
+    }
+    try {
+      var sessionRes = await sb.auth.getSession();
+      var token = sessionRes.data && sessionRes.data.session && sessionRes.data.session.access_token;
+      if (!token) throw new Error('Not signed in');
+
+      var res = await fetch('/api/admin-order-stripe-details?payment_intent_id=' + encodeURIComponent(paymentIntentId), {
+        headers: { Authorization: 'Bearer ' + token }
+      });
+      var data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load');
+
+      stripeDetailCache[paymentIntentId] = data;
+      renderStripeDetails(container, data);
+    } catch (err) {
+      container.innerHTML = '<h4>Stripe Payment</h4><p style="color:var(--text-muted);">Unable to load Stripe details: ' + escapeHtml(err.message) + '</p>';
+    }
+  }
+
+  function renderStripeDetails(container, data) {
+    var card = data.card ? (data.card.brand.toUpperCase() + ' •••• ' + data.card.last4 + ' (exp ' + data.card.exp_month + '/' + data.card.exp_year + ')') : '—';
+    var refundLine = data.amount_refunded > 0
+      ? '<p>Refunded: ' + moneyFromCents(data.amount_refunded, data.currency) + '</p>'
+      : '';
+    container.innerHTML =
+      '<h4>Stripe Payment</h4>' +
+      '<p>Status: <strong>' + escapeHtml(data.status) + '</strong></p>' +
+      '<p>Amount charged: ' + moneyFromCents(data.amount, data.currency) + '</p>' +
+      '<p>Card: ' + escapeHtml(card) + '</p>' +
+      refundLine +
+      '<p style="margin-top:10px;">' +
+        (data.receipt_url ? '<a href="' + escapeHtml(data.receipt_url) + '" target="_blank" rel="noopener" class="btn btn-secondary" style="margin-right:8px;">View Receipt</a>' : '') +
+        '<a href="' + escapeHtml(data.dashboard_url) + '" target="_blank" rel="noopener" class="btn btn-secondary">Open in Stripe</a>' +
+      '</p>';
   }
 
   async function saveTracking(e) {

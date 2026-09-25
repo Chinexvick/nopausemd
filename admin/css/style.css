@@ -668,6 +668,9 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 .order-detail-block p { margin: 0 0 6px; font-size: 13px; color: var(--text-dark); }
 .order-line-item { display: flex; justify-content: space-between; font-size: 13px; padding: 6px 0; border-bottom: 1px dashed var(--border); }
 
+.order-row-detail > .order-detail-block { margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--border); }
+.stripe-detail-loading { color: var(--text-muted); font-style: italic; }
+
 .tracker-field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
 .tracker-field label { font-size: 12px; font-weight: 600; color: var(--text-dark); }
 .tracker-field input, .tracker-field select {
