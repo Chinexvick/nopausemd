@@ -5,7 +5,12 @@
 // either reveals it or redirects away.
 (function () {
   function goToLogin(reason) {
-    var next = encodeURIComponent(location.pathname.split('/').pop() || 'overview.html');
+    // Preserve the full page + query string (e.g. order-detail.html?id=...&type=order)
+    // so a deep link (an email notification CTA, say) still lands on the same
+    // record after signing in — not just back at overview.html. login.html
+    // re-validates this value before ever using it as a redirect target.
+    var page = location.pathname.split('/').pop() || 'overview.html';
+    var next = encodeURIComponent(page + location.search);
     location.replace('login.html?next=' + next + (reason ? '&reason=' + reason : ''));
   }
 

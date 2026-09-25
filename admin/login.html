@@ -65,6 +65,22 @@
   var params = new URLSearchParams(location.search);
   var errorEl = document.getElementById('login-error');
 
+  // `next` comes from the URL (a query param an attacker fully controls), so
+  // it must be re-validated here even though auth-guard.js only ever sets it
+  // to a same-directory .html path — never trust it just because it decodes
+  // cleanly. Anything that isn't a bare relative "name.html" or
+  // "name.html?query" (no scheme, no "//", no leading slash, no "..") falls
+  // back to overview.html instead of being followed, so this can't become an
+  // open redirect.
+  function safeNextUrl() {
+    var raw = params.get('next');
+    if (!raw) return 'overview.html';
+    var decoded;
+    try { decoded = decodeURIComponent(raw); } catch (e) { return 'overview.html'; }
+    if (!/^[a-zA-Z0-9_-]+\.html(\?[^\s]*)?$/.test(decoded)) return 'overview.html';
+    return decoded;
+  }
+
   if (params.get('reason') === 'not_admin') {
     errorEl.textContent = 'That account does not have admin access to this dashboard.';
     errorEl.classList.add('show');
@@ -82,7 +98,7 @@
     var session = result.data && result.data.session;
     if (!session) return;
     sb.from('store_admins').select('id').eq('id', session.user.id).maybeSingle().then(function (res) {
-      if (res.data) location.replace(params.get('next') || 'overview.html');
+      if (res.data) location.replace(safeNextUrl());
     });
   }).catch(function () { /* ignore — user can still sign in manually */ });
 
@@ -107,7 +123,7 @@
           errorEl.classList.add('show');
         });
       }
-      location.replace(params.get('next') || 'overview.html');
+      location.replace(safeNextUrl());
     }).catch(function () {
       errorEl.textContent = 'Incorrect email or password.';
       errorEl.classList.add('show');
