@@ -1243,12 +1243,23 @@ function initNewsletterPopup() {
       msgEl.classList.remove('show', 'error');
 
       supabaseRpc('subscribe_newsletter', { p_site: STOREFRONT_SITE, p_email: email })
-        .then(function () {
-          msgEl.textContent = "You're subscribed! Thanks for joining us.";
+        .then(function (status) {
+          if (status === 'already_subscribed') {
+            msgEl.textContent = "You're already subscribed — thanks for being with us!";
+          } else {
+            msgEl.textContent = "You're subscribed! Check your inbox for a welcome email.";
+            // Fire-and-forget: a slow/failed welcome email should never
+            // block or undo the subscription itself.
+            fetch('/api/send-newsletter-welcome', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ site: STOREFRONT_SITE, email: email })
+            }).catch(function () { /* subscription already succeeded; ignore */ });
+          }
           msgEl.classList.add('show');
           form.style.display = 'none';
           markSeen();
-          setTimeout(dismiss, 2000);
+          setTimeout(dismiss, 2500);
         })
         .catch(function (err) {
           submitting = false;
