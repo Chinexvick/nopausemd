@@ -540,10 +540,9 @@ function renderProductGrid(grid, products) {
   products.forEach(function (p) { byId[p.id] = p; });
 
   grid.innerHTML = products.map(function (p) {
-    var isBook = p.category === 'book';
     return (
       '<div class="product-card">' +
-        '<div class="product-image" data-view-product-id="' + p.id + '"' + (isBook ? ' style="background:#0a2612;"' : '') + '>' +
+        '<div class="product-image" data-view-product-id="' + p.id + '">' +
           '<img src="' + escapeHtml(p.image_url || '') + '" alt="' + escapeHtml(p.name) + '" loading="lazy">' +
         '</div>' +
         '<div class="product-body">' +
@@ -661,9 +660,8 @@ function initProductDetailModal() {
   });
 
   window.openProductDetail = function (product) {
-    var isBook = product.category === 'book';
     document.getElementById('product-modal-content').innerHTML =
-      '<div class="product-modal-image"' + (isBook ? ' style="background:#0a2612;"' : '') + '>' +
+      '<div class="product-modal-image">' +
         '<img src="' + escapeHtml(product.image_url || '') + '" alt="' + escapeHtml(product.name) + '">' +
       '</div>' +
       '<div class="product-modal-info">' +
