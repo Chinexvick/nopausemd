@@ -499,7 +499,7 @@ ul { margin: 0; padding: 0; }
   width: 46px;
   height: 46px;
   border-radius: 14px;
-  background: var(--footer-bg);
+  background: var(--primary-p300);
   border: none;
   cursor: pointer;
   flex-shrink: 0;
@@ -1178,6 +1178,13 @@ ul { margin: 0; padding: 0; }
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 24px;
+}
+
+/* The home page only ever shows a 2-product teaser — a fixed 3-column
+   grid would leave them stranded on the left with an empty column. */
+#home-product-grid {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 340px));
+  justify-content: center;
 }
 
 .product-card {
