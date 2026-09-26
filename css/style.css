@@ -3,10 +3,13 @@
    ========================================================= */
 
 :root {
-  --primary-p300: #6cbf3d;
-  --primary-p400: #4c862b;
-  --primary-p100: #aada8e;
-  --secondary-s300: #397f37;
+  /* Brand palette sampled directly from the product bottle labels:
+     leaf/logo green #31852b, deep label green #095c14, label gold #d8ad21. */
+  --primary-p300: #2f8a2a;
+  --primary-p400: #206020;
+  --primary-p100: #a8d9a0;
+  --secondary-s300: #0d5a17;
+  --gold-accent: #d8ad21;
   --black: #121212;
   --white: #ffffff;
   --neutral-n200: #6b788e;
@@ -14,11 +17,11 @@
   --neutral-n30: #eef0f2;
   --neutral-n20: #fafbfc;
 
-  --footer-bg: #0c211b;
-  --footer-border: #173f35;
-  --footer-text: #a9cdbf;
-  --footer-text-dim: #6b8f80;
-  --footer-text-dimmer: #4a6b5d;
+  --footer-bg: #0a2612;
+  --footer-border: #1c4a28;
+  --footer-text: #b8d9bc;
+  --footer-text-dim: #7fa688;
+  --footer-text-dimmer: #557a5e;
 
   --font-serif: 'Baskervville', Georgia, serif;
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -82,7 +85,7 @@ body {
   color: var(--black);
   background:
     var(--white)
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='190' height='190'%3E%3Cg fill='none' stroke='%234c862b' stroke-width='1.1' opacity='0.05'%3E%3Cpath d='M25 130C15 100 35 65 70 50c-8 18-20 30-38 42C55 78 68 60 78 38'/%3E%3Cpath d='M150 40c10 30-10 65-45 80c8-18 20-30 38-42c-23 14-36 32-46 54'/%3E%3C/g%3E%3C/svg%3E");
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='190' height='190'%3E%3Cg fill='none' stroke='%23206020' stroke-width='1.1' opacity='0.05'%3E%3Cpath d='M25 130C15 100 35 65 70 50c-8 18-20 30-38 42C55 78 68 60 78 38'/%3E%3Cpath d='M150 40c10 30-10 65-45 80c8-18 20-30 38-42c-23 14-36 32-46 54'/%3E%3C/g%3E%3C/svg%3E");
   background-repeat: repeat;
   line-height: 1.5;
 }
@@ -510,7 +513,7 @@ ul { margin: 0; padding: 0; }
   width: 20px;
   height: 2.5px;
   border-radius: 2px;
-  background: #f2c94c;
+  background: var(--gold-accent);
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
 }
 
@@ -1225,10 +1228,10 @@ ul { margin: 0; padding: 0; }
   white-space: nowrap;
 }
 
-.badge-green { background: #eef8e7; color: #6cbf3d; }
-.badge-pink { background: #fbe6df; color: #f07462; }
+.badge-green { background: #e8f5e4; color: var(--primary-p300); }
+.badge-pink { background: #fce7ea; color: #e76f89; }
 .badge-tan { background: #f0ebe3; color: #8b6f47; }
-.badge-teal { background: #e8f4f0; color: #173f35; }
+.badge-teal { background: #e8f4f0; color: var(--footer-border); }
 
 .product-body h3 {
   font-family: var(--font-product);
@@ -1279,7 +1282,7 @@ ul { margin: 0; padding: 0; }
 .product-btn:hover { opacity: 0.9; }
 
 .bundle-strip {
-  background: #173f35;
+  background: var(--footer-border);
   border-radius: 20px;
   padding: 28px 36px;
   display: flex;
@@ -1299,13 +1302,13 @@ ul { margin: 0; padding: 0; }
 }
 
 .bundle-strip p {
-  color: #a9cdbf;
+  color: var(--footer-text);
   font-size: 14px;
   margin: 0;
 }
 
 .bundle-cta {
-  background: #6cbf3d;
+  background: var(--primary-p300);
   color: var(--white);
   padding: 12px 24px;
   border-radius: 999px;
