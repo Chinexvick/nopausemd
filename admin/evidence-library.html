@@ -54,19 +54,16 @@
           <h1 class="page-title">Evidence Library</h1>
           <p class="page-subtitle">Manage the evidence supporting CliniPauseMD education and recommendations.</p>
         </div>
-        <div class="header-actions"><a class="btn btn-secondary" href="#">Filter</a><a class="btn btn-primary" href="#">+ Add Reference</a></div>
+        <div class="header-actions"></div>
       </div>
-<div class="segment-pills"><span class="pill active">All References <span class="count">(184)</span></span><span class="pill">Current <span class="count">(162)</span></span><span class="pill">Under Review <span class="count">(14)</span></span><span class="pill">Needs Update <span class="count">(8)</span></span><span class="pill">Archived <span class="count">(0)</span></span></div>
+<div id="nopause-connect-slot"></div>
       <div class="table-card">
-        
         <table class="data-table">
-          <thead><tr><th>Evidence Title</th><th>Topic</th><th>Source</th><th>Grade</th><th>Status</th><th>Last Reviewed</th><th>Next Review</th><th>Version</th></tr></thead>
-          <tbody><tr><td>Paced Breathing for Vasomotor Symptoms Control</td><td>Hot Flashes</td><td>North American Menopause Soc.</td><td><span class="badge badge-green">Grade A</span></td><td><span class="badge badge-green">Current</span></td><td>Jan 12, 2026</td><td>Jan 12, 2027</td><td>v2.4</td></tr><tr><td>Estrogen Therapy &amp; Cardiovascular Disease Risk</td><td>Hormone Therapy</td><td>ACOG Guidelines 2024</td><td><span class="badge badge-green">Grade A</span></td><td><span class="badge badge-green">Current</span></td><td>Nov 08, 2025</td><td>Nov 08, 2026</td><td>v4.1</td></tr><tr><td>Magnesium Supplementation for Menopausal Sleep</td><td>Sleep &amp; Mind</td><td>Journal of Clinical Sleep Med.</td><td><span class="badge badge-blue">Grade B</span></td><td><span class="badge badge-amber">Under Review</span></td><td>Sep 04, 2025</td><td>Mar 04, 2026</td><td>v1.8</td></tr><tr><td>CBT Protocols for Menopause Anxiety &amp; Mood</td><td>Mental Health</td><td>Cochrane Database Review</td><td><span class="badge badge-blue">Grade B</span></td><td><span class="badge badge-green">Current</span></td><td>Jul 18, 2025</td><td>Jul 18, 2026</td><td>v1.2</td></tr><tr><td>Phytoestrogens and Plant-Based Symptom Relief</td><td>Supplements</td><td>Endocrine Society Review</td><td><span class="badge badge-grey">Grade C</span></td><td><span class="badge badge-red">Needs Update</span></td><td>Jan 10, 2024</td><td>Jul 10, 2025</td><td>v0.9</td></tr><tr><td>Bone Mineral Density Loss and Early Estrogen Decline</td><td>Osteoporosis</td><td>The Lancet Endocrinology</td><td><span class="badge badge-green">Grade A</span></td><td><span class="badge badge-green">Current</span></td><td>Oct 29, 2025</td><td>Oct 29, 2026</td><td>v2.1</td></tr><tr><td>Soy Isoflavones for Mild Vasomotor Fluctuations</td><td>Nutrition</td><td>Harvard Health Publishing</td><td><span class="badge badge-grey">Grade C</span></td><td><span class="badge badge-green">Current</span></td><td>Aug 14, 2025</td><td>Aug 14, 2026</td><td>v1.0</td></tr><tr><td>Black Cohosh Efficacy for Severe Temperature Spikes</td><td>Alternative Care</td><td>National Institutes of Health (NIH)</td><td><span class="badge badge-grey">Grade C</span></td><td><span class="badge badge-red">Needs Update</span></td><td>May 22, 2024</td><td>Nov 22, 2025</td><td>v0.3</td></tr></tbody>
+          <thead><tr><th>Topic</th><th>Rating</th><th>Source</th><th>Status</th></tr></thead>
+          <tbody id="evidence-table-body"><tr><td colspan="4" class="orders-empty">Loading…</td></tr></tbody>
         </table>
-        
         <div class="table-footer">
-          <span>Showing 1-8 of 184 references</span>
-          <div class="pagination"><button disabled>Previous</button><button>Next</button></div>
+          <span id="evidence-count"></span>
         </div>
       </div>
 
@@ -77,6 +74,8 @@
 <script src="js/supabase-client.js"></script>
 <script src="js/auth-guard.js"></script>
 <script src="js/nav-badges.js"></script>
+<script src="js/nopause-backend.js"></script>
+<script src="js/evidence-library.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

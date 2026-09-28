@@ -54,8 +54,9 @@
           <h1 class="page-title">Safety &amp; Rules</h1>
           <p class="page-subtitle">Manage clinical safety rules, red flags, and escalation protocols.</p>
         </div>
-        <div class="header-actions"><a class="btn btn-primary" href="#">Create Safety Rule</a></div>
+        <div class="header-actions"></div>
       </div>
+<div id="nopause-connect-slot"></div>
 <div class="kpi-strip">
       <div class="kpi-card">
         <div class="kpi-label">Active Rules</div>
@@ -82,11 +83,21 @@
       </div>
 
       <div class="kpi-card">
-        <div class="kpi-label">Open Safety Events</div>
-        <div class="kpi-value">3</div>
+        <div class="kpi-label">Unreviewed Escalations</div>
+        <div class="kpi-value" id="kpi-escalations-unreviewed">—</div>
         <div class="kpi-delta red"><span class="dot"></span>High Priority</div>
       </div>
-</div><h3 class="card-title-sm" style="margin:24px 0 12px;">Safety Categories</h3><div class="module-grid"><div class="card">
+</div>
+<h3 class="card-title-sm" style="margin:24px 0 12px;">Kill Switches</h3>
+<div class="module-grid" id="flags-grid"><div class="card"><div class="orders-empty">Loading…</div></div></div>
+<h3 class="card-title-sm" style="margin:24px 0 12px;">Unreviewed Safety Escalations</h3>
+<div class="table-card">
+  <table class="data-table">
+    <thead><tr><th>Member</th><th>Tier</th><th>Flagged message</th><th>When</th><th>Action</th></tr></thead>
+    <tbody id="escalations-body"><tr><td colspan="5" class="orders-empty">Loading…</td></tr></tbody>
+  </table>
+</div>
+<h3 class="card-title-sm" style="margin:24px 0 12px;">Safety Categories</h3><div class="module-grid"><div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;"><strong>Red Flags</strong><span class="badge badge-green">Fully Reviewed</span></div>
       <div style="font-size:13px;color:var(--text-muted);margin-bottom:14px;">Total Active Rules: <strong style="color:var(--text-dark);">34</strong></div>
       <a href="safety-rule-detail.html" style="font-size:13px;font-weight:600;color:var(--green);">Review rules &rarr;</a>
@@ -118,6 +129,8 @@
 <script src="js/supabase-client.js"></script>
 <script src="js/auth-guard.js"></script>
 <script src="js/nav-badges.js"></script>
+<script src="js/nopause-backend.js"></script>
+<script src="js/safety-rules.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

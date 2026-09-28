@@ -56,6 +56,14 @@
         </div>
         <div class="header-actions"></div>
       </div>
+<div id="nopause-connect-slot"></div>
+<div class="table-card" style="margin-bottom:20px;">
+  <div class="table-card-header">NoPauseMD Backend Status</div>
+  <table class="data-table">
+    <thead><tr><th>Environment</th><th>Video visits</th><th>MFA required</th><th>Owners configured</th></tr></thead>
+    <tbody id="backend-status-body"><tr><td colspan="4" class="orders-empty">Loading…</td></tr></tbody>
+  </table>
+</div>
 <div class="kpi-strip">
       <div class="kpi-card">
         <div class="kpi-label">Uptime (30d)</div>
@@ -97,6 +105,8 @@
 <script src="js/supabase-client.js"></script>
 <script src="js/auth-guard.js"></script>
 <script src="js/nav-badges.js"></script>
+<script src="js/nopause-backend.js"></script>
+<script src="js/system-health.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

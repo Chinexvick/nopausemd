@@ -54,19 +54,20 @@
           <h1 class="page-title">Subscriptions</h1>
           <p class="page-subtitle">Manage plans, pricing, and subscriber activity.</p>
         </div>
-        <div class="header-actions"><a class="btn btn-primary" href="#">Add Plan</a></div>
+        <div class="header-actions"></div>
       </div>
+<div id="nopause-connect-slot"></div>
 <div class="kpi-strip">
       <div class="kpi-card">
         <div class="kpi-label">Active Subscribers</div>
-        <div class="kpi-value">12,840</div>
-        <div class="kpi-delta green"><span class="dot"></span>+6.2% (30d)</div>
+        <div class="kpi-value" id="kpi-subs-active">—</div>
+        <div class="kpi-delta green"><span class="dot"></span><span id="kpi-subs-trialing">—</span> trialing</div>
       </div>
 
       <div class="kpi-card">
-        <div class="kpi-label">MRR</div>
-        <div class="kpi-value">$412,900</div>
-        <div class="kpi-delta green"><span class="dot"></span>+8.1%</div>
+        <div class="kpi-label">MRR (estimate)</div>
+        <div class="kpi-value" id="kpi-mrr">—</div>
+        <div class="kpi-delta green"><span class="dot"></span>From list prices</div>
       </div>
 
       <div class="kpi-card">
@@ -82,14 +83,12 @@
       </div>
 </div>
       <div class="table-card">
-        <div class="table-card-header">Plans</div>
+        <div class="table-card-header">Subscribers</div>
         <table class="data-table">
-          <thead><tr><th>Plan Name</th><th>Price</th><th>Status</th><th>Subscribers</th><th>Monthly Churn</th></tr></thead>
-          <tbody><tr><td><a href="plan-detail.html" style="font-weight:600;">Essential</a></td><td>$29/mo</td><td><span class="badge badge-green">Active</span></td><td>6,240</td><td>4.1%</td></tr><tr><td><a href="plan-detail.html" style="font-weight:600;">Complete Care</a></td><td>$59/mo</td><td><span class="badge badge-green">Active</span></td><td>5,180</td><td>2.8%</td></tr><tr><td><a href="plan-detail.html" style="font-weight:600;">Complete Care + Clinician</a></td><td>$99/mo</td><td><span class="badge badge-green">Active</span></td><td>1,420</td><td>1.9%</td></tr></tbody>
+          <thead><tr><th>Member</th><th>Plan</th><th>Status</th><th>Trial ends</th><th>Renews</th></tr></thead>
+          <tbody id="subscribers-body"><tr><td colspan="5" class="orders-empty">Loading…</td></tr></tbody>
         </table>
-        
       </div>
-<div class="card"><div class="card-title">Recent Subscription Activity</div><div class="timeline-list"><div class="timeline-item"><div class="t-dot"></div><div class="t-body"><div class="t-title">2 min ago</div><div class="t-time">1,204 new trial signups on Essential plan this week</div></div></div><div class="timeline-item"><div class="t-dot"></div><div class="t-body"><div class="t-title">18 min ago</div><div class="t-time">Complete Care + Clinician plan pricing updated to $99/mo</div></div></div><div class="timeline-item"><div class="t-dot"></div><div class="t-body"><div class="t-title">1 hr ago</div><div class="t-time">42 subscribers upgraded from Essential to Complete Care</div></div></div></div></div>
     </main>
   </div>
 </div>
@@ -97,6 +96,8 @@
 <script src="js/supabase-client.js"></script>
 <script src="js/auth-guard.js"></script>
 <script src="js/nav-badges.js"></script>
+<script src="js/nopause-backend.js"></script>
+<script src="js/subscriptions.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

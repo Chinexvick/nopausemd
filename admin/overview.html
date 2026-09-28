@@ -56,29 +56,30 @@
         </div>
         <div class="header-actions"><a class="btn btn-secondary" href="#">Export Report</a><a class="btn btn-primary" href="#">+ New Announcement</a></div>
       </div>
+<div id="nopause-connect-slot"></div>
 <div class="kpi-strip">
       <div class="kpi-card">
-        <div class="kpi-label">Total Patients</div>
-        <div class="kpi-value">14,200</div>
-        <div class="kpi-delta green"><span class="dot"></span>+18% year over year</div>
+        <div class="kpi-label">NoPauseMD Members</div>
+        <div class="kpi-value" id="kpi-members-total">—</div>
+        <div class="kpi-delta green"><span class="dot"></span><span id="kpi-members-delta">Loading…</span></div>
       </div>
 
       <div class="kpi-card">
         <div class="kpi-label">Active Clinicians</div>
-        <div class="kpi-value">38</div>
-        <div class="kpi-delta blue"><span class="dot"></span>3 onboarding this week</div>
+        <div class="kpi-value" id="kpi-clinicians-total">—</div>
+        <div class="kpi-delta blue"><span class="dot"></span>Accepting new patients</div>
       </div>
 
       <div class="kpi-card">
-        <div class="kpi-label">Pending Reviews</div>
-        <div class="kpi-value">127</div>
-        <div class="kpi-delta amber"><span class="dot"></span>Amber alert level</div>
+        <div class="kpi-label">Unassigned Consultations</div>
+        <div class="kpi-value" id="kpi-consultations-unassigned">—</div>
+        <div class="kpi-delta amber"><span class="dot"></span><span id="kpi-consultations-urgent">—</span> urgent</div>
       </div>
 
       <div class="kpi-card">
         <div class="kpi-label">Safety Escalations</div>
-        <div class="kpi-value">8</div>
-        <div class="kpi-delta red"><span class="dot"></span>High priority risk</div>
+        <div class="kpi-value" id="kpi-safety-escalations">—</div>
+        <div class="kpi-delta red"><span class="dot"></span>Unreviewed</div>
       </div>
 </div><div class="grid-main-side"><div class="card"><div class="card-title">Platform Activity (30 days)</div><div class="progress-track" style="height:120px;background:#f5f6f7;border-radius:12px;display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:12px;">Active-user trend chart</div></div><div class="card"><div class="card-title">Recent Activity</div><div class="timeline-list"><div class="timeline-item"><div class="t-dot"></div><div class="t-body"><div class="t-title">Dr. Rachel Green completed 8 consultations</div><div class="t-time">10 mins ago</div></div></div><div class="timeline-item"><div class="t-dot"></div><div class="t-body"><div class="t-title">AI Safety Engine flagged interaction #AI-8942</div><div class="t-time">24 mins ago</div></div></div><div class="timeline-item"><div class="t-dot"></div><div class="t-body"><div class="t-title">Evidence Library: NAMS citation v2.4 verified</div><div class="t-time">1 hour ago</div></div></div><div class="timeline-item"><div class="t-dot"></div><div class="t-body"><div class="t-title">142 new users completed onboarding intake</div><div class="t-time">3 hours ago</div></div></div></div></div></div><div class="grid-2"><div class="card"><div class="card-title">Governance Alerts</div><div class="timeline-list"><div class="timeline-item"><div class="t-dot"></div><div class="t-body"><div class="t-title">Production config changes require AI Governance approval</div><div class="t-time">Today</div></div></div><div class="timeline-item"><div class="t-dot"></div><div class="t-body"><div class="t-title">3 safety rules awaiting clinical board review</div><div class="t-time">Today</div></div></div></div></div><div class="card"><div class="card-title">Content Pipeline</div><div class="timeline-list"><div class="timeline-item"><div class="t-dot"></div><div class="t-body"><div class="t-title">4 articles under compliance review</div><div class="t-time">Today</div></div></div><div class="timeline-item"><div class="t-dot"></div><div class="t-body"><div class="t-title">Q4 clinical guideline refresh due in 12 days</div><div class="t-time">This week</div></div></div></div></div></div>
     </main>
@@ -88,6 +89,8 @@
 <script src="js/supabase-client.js"></script>
 <script src="js/auth-guard.js"></script>
 <script src="js/nav-badges.js"></script>
+<script src="js/nopause-backend.js"></script>
+<script src="js/overview.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

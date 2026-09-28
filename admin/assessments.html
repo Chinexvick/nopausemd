@@ -81,13 +81,13 @@
         <div class="kpi-delta green"><span class="dot"></span>-30s optimization</div>
       </div>
 </div>
+      <div id="nopause-connect-slot"></div>
       <div class="table-card">
-        
+        <div class="table-card-header">Assessment Versions</div>
         <table class="data-table">
-          <thead><tr><th>Question Text</th><th>Category</th><th>Status</th><th>Version</th><th>Last Updated</th></tr></thead>
-          <tbody><tr><td>What support areas are you looking to focus on first?</td><td>Onboarding Intake</td><td><span class="badge badge-green">Active</span></td><td>v1.4</td><td>Jan 12, 2026</td><td><a class="btn btn-sm btn-secondary" href="assessment-editor.html">Edit</a></td></tr><tr><td>Have you noticed any recent changes in your body temperature or sleep?</td><td>Symptom Tracking</td><td><span class="badge badge-green">Active</span></td><td>v2.0</td><td>Jan 08, 2026</td><td><a class="btn btn-sm btn-secondary" href="assessment-editor.html">Edit</a></td></tr><tr><td>How are these experiences impacting your everyday life?</td><td>Quality of Life</td><td><span class="badge badge-green">Active</span></td><td>v1.1</td><td>Jan 04, 2026</td><td><a class="btn btn-sm btn-secondary" href="assessment-editor.html">Edit</a></td></tr><tr><td>Where are you currently at on your menopause journey?</td><td>Demographics</td><td><span class="badge badge-green">Active</span></td><td>v1.0</td><td>Dec 20, 2025</td><td><a class="btn btn-sm btn-secondary" href="assessment-editor.html">Edit</a></td></tr><tr><td>Do you have any existing health contexts we should be aware of?</td><td>Medical History</td><td><span class="badge badge-green">Active</span></td><td>v2.5</td><td>Dec 18, 2025</td><td><a class="btn btn-sm btn-secondary" href="assessment-editor.html">Edit</a></td></tr><tr><td>What would feeling healthier and more supported look like for you?</td><td>Goals &amp; Outcomes</td><td><span class="badge badge-grey">Draft</span></td><td>v0.8</td><td>Nov 24, 2025</td><td><a class="btn btn-sm btn-secondary" href="assessment-editor.html">Edit</a></td></tr></tbody>
+          <thead><tr><th>Label</th><th>Status</th><th>Questions</th><th>Created</th><th>Actions</th></tr></thead>
+          <tbody id="assessment-versions-body"><tr><td colspan="5" class="orders-empty">Loading…</td></tr></tbody>
         </table>
-        
       </div>
 
     </main>
@@ -97,6 +97,8 @@
 <script src="js/supabase-client.js"></script>
 <script src="js/auth-guard.js"></script>
 <script src="js/nav-badges.js"></script>
+<script src="js/nopause-backend.js"></script>
+<script src="js/assessments.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

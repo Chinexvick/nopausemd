@@ -54,16 +54,20 @@
           <h1 class="page-title">Content</h1>
           <p class="page-subtitle">Manage articles, guides, and educational content.</p>
         </div>
-        <div class="header-actions"><a class="btn btn-primary" href="#">New Article</a></div>
+        <div class="header-actions"></div>
       </div>
-<div class="segment-pills"><span class="pill active">All <span class="count">(210)</span></span><span class="pill">Published <span class="count">(184)</span></span><span class="pill">Draft <span class="count">(18)</span></span><span class="pill">Under Review <span class="count">(8)</span></span></div><div class="bulk-bar"><span>3 items selected</span><a class="btn btn-sm btn-primary" href="#">Publish</a><a class="btn btn-sm btn-secondary" href="#">Archive</a><a class="btn btn-sm btn-danger" href="#">Delete</a></div>
+<div id="nopause-connect-slot"></div>
+<div class="segment-pills" id="content-type-pills">
+  <span class="pill active" data-type="knowledge">Knowledge</span>
+  <span class="pill" data-type="plan-templates">Plan Templates</span>
+  <span class="pill" data-type="relief-guides">Relief Guides</span>
+  <span class="pill" data-type="relief-options">Relief Options</span>
+</div>
       <div class="table-card">
-        
         <table class="data-table">
-          <thead><tr><th>Title</th><th>Type</th><th>Status</th><th>Last Updated</th></tr></thead>
-          <tbody><tr><td><div class="checkbox-box checked"></div> Understanding Perimenopause: A Complete Guide</td><td>Article</td><td><span class="badge badge-green">Published</span></td><td>Jan 10, 2026</td></tr><tr><td><div class="checkbox-box checked"></div> Paced Breathing for Hot Flash Relief</td><td>Guide</td><td><span class="badge badge-green">Published</span></td><td>Jan 08, 2026</td></tr><tr><td><div class="checkbox-box checked"></div> Navigating Hormone Therapy Conversations",Article</td><td>Article</td><td><span class="badge badge-grey">Draft</span></td><td>Jan 05, 2026</td></tr><tr><td><div class="checkbox-box"></div> Sleep Hygiene for Menopause Symptoms</td><td>Article</td><td><span class="badge badge-green">Published</span></td><td>Dec 28, 2025</td></tr><tr><td><div class="checkbox-box"></div> Nutrition Basics for Midlife Health</td><td>Guide</td><td><span class="badge badge-amber">Under Review</span></td><td>Dec 20, 2025</td></tr></tbody>
+          <thead><tr><th>Title</th><th>Status</th><th>Updated</th><th>Actions</th></tr></thead>
+          <tbody id="content-table-body"><tr><td colspan="4" class="orders-empty">Loading…</td></tr></tbody>
         </table>
-        
       </div>
 
     </main>
@@ -73,6 +77,8 @@
 <script src="js/supabase-client.js"></script>
 <script src="js/auth-guard.js"></script>
 <script src="js/nav-badges.js"></script>
+<script src="js/nopause-backend.js"></script>
+<script src="js/content-bulk-actions.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

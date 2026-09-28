@@ -54,8 +54,21 @@
           <h1 class="page-title">Reports</h1>
           <p class="page-subtitle">Scheduled deliveries, templates, and report history.</p>
         </div>
-        <div class="header-actions"><a class="btn btn-primary" href="#">New Report</a></div>
+        <div class="header-actions"></div>
       </div>
+<div id="nopause-connect-slot"></div>
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-title">Export CSVs (NoPauseMD backend)</div>
+  <div style="display:flex;flex-wrap:wrap;gap:10px;">
+    <button class="btn btn-secondary export-btn" data-export="members">Members</button>
+    <button class="btn btn-secondary export-btn" data-export="subscriptions">Subscriptions</button>
+    <button class="btn btn-secondary export-btn" data-export="consultations">Consultations</button>
+    <button class="btn btn-secondary export-btn" data-export="escalations">Escalations</button>
+    <button class="btn btn-secondary export-btn" data-export="referrals">Referrals</button>
+    <button class="btn btn-secondary export-btn" data-export="audit-log">Audit Log</button>
+  </div>
+  <div id="export-status" style="margin-top:10px;font-size:13px;color:var(--text-muted);"></div>
+</div>
 <div class="kpi-strip">
       <div class="kpi-card">
         <div class="kpi-label">Scheduled Reports</div>
@@ -97,6 +110,8 @@
 <script src="js/supabase-client.js"></script>
 <script src="js/auth-guard.js"></script>
 <script src="js/nav-badges.js"></script>
+<script src="js/nopause-backend.js"></script>
+<script src="js/reports.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

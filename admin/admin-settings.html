@@ -56,6 +56,27 @@
         </div>
         <div class="header-actions"><a class="btn btn-primary" href="#">Save Changes</a></div>
       </div>
+<div id="nopause-connect-slot"></div>
+<div class="table-card" style="margin-bottom:20px;">
+  <div class="table-card-header">NoPauseMD Staff</div>
+  <table class="data-table">
+    <thead><tr><th>Email</th><th>Roles</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody id="staff-body"><tr><td colspan="4" class="orders-empty">Loading…</td></tr></tbody>
+  </table>
+</div>
+<div class="card" style="max-width:480px;margin-bottom:20px;">
+  <div class="card-title">Add Staff Member</div>
+  <form id="add-staff-form">
+    <input type="email" required placeholder="Email" id="add-staff-email" style="width:100%;padding:10px 12px;margin-bottom:10px;border:1px solid var(--border);border-radius:8px;">
+    <select id="add-staff-role" style="width:100%;padding:10px 12px;margin-bottom:10px;border:1px solid var(--border);border-radius:8px;">
+      <option value="admin">Administrator</option>
+      <option value="clinical_lead">Clinical Lead</option>
+      <option value="clinician">Clinician</option>
+    </select>
+    <button type="submit" class="btn btn-primary" style="width:100%;">Add staff member</button>
+  </form>
+  <div id="add-staff-result" style="margin-top:10px;font-size:13px;"></div>
+</div>
 <div class="tab-strip" data-tab-group><a class="tab-item active" href="#" data-tab>General</a><a class="tab-item" href="#" data-tab>Platform Info</a><a class="tab-item" href="#" data-tab>Feature Toggles</a><a class="tab-item" href="#" data-tab>Integrations</a></div><div class="card"><div class="card-title">General Configuration</div>
       <div class="setting-row">
         <div><div class="s-title">Maintenance Mode</div><div class="s-desc">Take the platform offline for scheduled maintenance</div></div>
@@ -94,6 +115,8 @@
 <script src="js/supabase-client.js"></script>
 <script src="js/auth-guard.js"></script>
 <script src="js/nav-badges.js"></script>
+<script src="js/nopause-backend.js"></script>
+<script src="js/admin-settings.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>
