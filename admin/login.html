@@ -129,6 +129,9 @@
   if (params.get('reason') === 'not_admin') {
     errorEl.textContent = 'That account does not have admin access to this dashboard.';
     errorEl.classList.add('show');
+  } else if (params.get('reason') === 'idle_timeout') {
+    errorEl.textContent = 'You were signed out after 5 hours of inactivity. Please sign in again.';
+    errorEl.classList.add('show');
   }
 
   var superToggle = document.getElementById('super-admin-toggle');

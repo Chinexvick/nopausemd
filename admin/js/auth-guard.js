@@ -47,6 +47,24 @@
     if (event === 'SIGNED_OUT') goToLogin();
   });
 
+  // Auto-logout after 5 hours of no activity (mouse, keyboard, touch, or scroll).
+  // A fresh sign-in resets the clock; this is a rolling idle timeout, not a
+  // hard session-age cap.
+  var IDLE_LIMIT_MS = 5 * 60 * 60 * 1000;
+  var idleTimer = null;
+
+  function resetIdleTimer() {
+    if (idleTimer) clearTimeout(idleTimer);
+    idleTimer = setTimeout(function () {
+      sb.auth.signOut().finally(function () { goToLogin('idle_timeout'); });
+    }, IDLE_LIMIT_MS);
+  }
+
+  ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'].forEach(function (evt) {
+    document.addEventListener(evt, resetIdleTimer, { passive: true });
+  });
+  resetIdleTimer();
+
   function initials(name, email) {
     var source = (name || email || 'Admin').trim();
     var parts = source.split(/\s+/).filter(Boolean);
