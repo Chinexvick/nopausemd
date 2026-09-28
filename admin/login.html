@@ -232,10 +232,18 @@
           return;
         }
         return completeSignIn(session.access_token);
+      }).catch(function (err) {
+        // Sign-in succeeded but talking to the backend afterward failed —
+        // a different problem than bad credentials (most likely the backend's
+        // CORS settings don't yet allow this dashboard's origin).
+        if (err && err.code === 'password_change_required') { showChangePasswordStep(); return; }
+        errorEl.textContent = 'Signed in, but could not reach the NoPauseMD backend (' +
+          ((err && err.message) || 'unknown error') + '). This is usually a CORS setting on the backend, not your credentials.';
+        errorEl.classList.add('show');
       });
-    }).catch(function (err) {
-      errorEl.textContent = (err && err.code === 'password_change_required') ? '' : 'Incorrect email or password.';
-      if (err && err.code === 'password_change_required') { showChangePasswordStep(); return; }
+    }).catch(function () {
+      // signInWithPassword itself rejected — this is a real bad-credentials case.
+      errorEl.textContent = 'Incorrect email or password.';
       errorEl.classList.add('show');
     }).finally(function () {
       submitBtn.disabled = false;
