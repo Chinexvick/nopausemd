@@ -1,12 +1,10 @@
-// Client for the NoPauseMD admin-backend (https://clinipausemd-admin-backend.onrender.com).
-// This is a SEPARATE product's backend from the CliniPauseMD website — it has its own
-// Supabase project (the NoPauseMD mobile app's), so it needs its own auth session,
-// independent of window.sb (the website's Supabase client used by Orders, Products,
-// Live Chat, Contact Form, Bookings, Speaking Engagements and the Super Admin pages).
-//
-// The NoPauseMD app's own Supabase project (confirmed by its table names — clinicians,
-// consultation_messages, assessment_versions, feature_flags, etc. — matching the
-// admin-backend's repositories) — separate from the website's Supabase project.
+// Client for the NoPauseMD admin-backend (https://clinipausemd-admin-backend.onrender.com)
+// and its own Supabase project (efaulijkuqxwmsrvxwtc — confirmed by its table names:
+// clinicians, consultation_messages, assessment_versions, feature_flags, etc., matching
+// the admin-backend's own repositories). This is now the ONE sign-in for the whole admin
+// dashboard (see auth-guard.js) — independent of window.sb, the website's own Supabase
+// client, which auth-guard.js bridges into automatically after this sign-in succeeds so
+// Orders/Products/Live Chat/Contact Form/Bookings/Speaking Engagements keep working.
 window.NOPAUSE_BACKEND_URL = 'https://clinipausemd-admin-backend.onrender.com';
 window.NOPAUSE_SUPABASE_URL = 'https://efaulijkuqxwmsrvxwtc.supabase.co';
 window.NOPAUSE_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmYXVsaWprdXF4d21zcnZ4d3RjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MTI3OTUsImV4cCI6MjEwNTM4ODc5NX0.4phbivgGhTBA2qC3IEUzuyvXrYnmdR8VHNs_vgf506U';
@@ -38,48 +36,6 @@ window.NOPAUSE_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3M
   function signOut() {
     if (!isConfigured()) return Promise.resolve();
     return window.nopauseSb.auth.signOut();
-  }
-
-  // Renders a small inline "connect" card into `container` when there is no session yet.
-  // Calls `onReady()` once a session exists (either already present, or just signed in).
-  function ensureSession(container, onReady) {
-    if (!isConfigured()) {
-      container.innerHTML = '<div class="orders-empty">This section isn\'t configured yet — the NoPauseMD backend needs its Supabase URL and key set in js/nopause-backend.js.</div>';
-      return;
-    }
-    getSession().then(function (session) {
-      if (session) { onReady(session); return; }
-      renderConnectForm(container, onReady);
-    });
-  }
-
-  function renderConnectForm(container, onReady) {
-    container.innerHTML =
-      '<div class="card" style="max-width:420px;">' +
-        '<div class="card-title">Connect to the NoPauseMD backend</div>' +
-        '<p style="font-size:13px;color:var(--text-muted);margin:0 0 14px;">Sign in with your NoPauseMD staff account to load this section.</p>' +
-        '<form id="nopause-connect-form">' +
-          '<input type="email" required placeholder="Staff email" id="nopause-connect-email" style="width:100%;padding:10px 12px;margin-bottom:10px;border:1px solid var(--border);border-radius:8px;">' +
-          '<input type="password" required placeholder="Password" id="nopause-connect-password" style="width:100%;padding:10px 12px;margin-bottom:10px;border:1px solid var(--border);border-radius:8px;">' +
-          '<div id="nopause-connect-error" style="display:none;color:var(--red);font-size:13px;margin-bottom:10px;"></div>' +
-          '<button type="submit" class="btn btn-primary" style="width:100%;">Sign in</button>' +
-        '</form>' +
-      '</div>';
-
-    document.getElementById('nopause-connect-form').addEventListener('submit', function (e) {
-      e.preventDefault();
-      var email = document.getElementById('nopause-connect-email').value;
-      var password = document.getElementById('nopause-connect-password').value;
-      var errorEl = document.getElementById('nopause-connect-error');
-      errorEl.style.display = 'none';
-      signIn(email, password).then(function (session) {
-        container.innerHTML = '';
-        onReady(session);
-      }).catch(function (err) {
-        errorEl.textContent = (err && err.message) || 'Sign-in failed.';
-        errorEl.style.display = 'block';
-      });
-    });
   }
 
   // Calls the admin-backend, attaching the signed-in staff member's bearer token.
@@ -144,7 +100,6 @@ window.NOPAUSE_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3M
     getSession: getSession,
     signIn: signIn,
     signOut: signOut,
-    ensureSession: ensureSession,
     api: api,
     downloadCsv: downloadCsv,
     escapeHtml: escapeHtml

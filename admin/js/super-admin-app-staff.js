@@ -16,9 +16,7 @@
 
   whenReady(function () {
     if (!window.CURRENT_ADMIN.isSuperAdmin) return;
-    var slot = document.getElementById('nopause-connect-slot');
-    if (!slot) return;
-    NopauseBackend.ensureSession(slot, loadAppStaff);
+    loadAppStaff();
   });
 
   function loadAppStaff() {

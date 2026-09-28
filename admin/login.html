@@ -79,11 +79,16 @@
       <label>Password</label>
       <input type="password" name="password" autocomplete="current-password" required>
     </div>
-    <div class="toggle-row">
-      <input type="checkbox" id="super-admin-toggle">
-      <label for="super-admin-toggle">Log in as Super Admin</label>
-    </div>
     <button type="submit" class="login-submit" id="login-submit">Sign In</button>
+  </form>
+
+  <form id="new-password-form" style="display:none;">
+    <p class="login-sub" style="margin-bottom:16px;">This is a temporary password. Choose your own to continue (12–72 characters, with a letter and a number or symbol).</p>
+    <div class="login-field">
+      <label>New password</label>
+      <input type="password" name="new-password" autocomplete="new-password" required minlength="12">
+    </div>
+    <button type="submit" class="login-submit" id="new-password-submit">Set Password &amp; Continue</button>
   </form>
 
   <button type="button" class="forgot-link" id="forgot-link">Forgot password?</button>
@@ -105,14 +110,16 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="js/supabase-client.js"></script>
+<script src="js/nopause-backend.js"></script>
 <script>
 (function () {
   var params = new URLSearchParams(location.search);
   var errorEl = document.getElementById('login-error');
+  var loginForm = document.getElementById('login-form');
+  var newPasswordForm = document.getElementById('new-password-form');
 
   // `next` comes from the URL (a query param an attacker fully controls), so
-  // it must be re-validated here even though auth-guard.js only ever sets it
-  // to a same-directory .html path — never trust it just because it decodes
+  // it must be re-validated here — never trust it just because it decodes
   // cleanly. Anything that isn't a bare relative "name.html" or
   // "name.html?query" (no scheme, no "//", no leading slash, no "..") falls
   // back to overview.html instead of being followed, so this can't become an
@@ -134,21 +141,6 @@
     errorEl.classList.add('show');
   }
 
-  var superToggle = document.getElementById('super-admin-toggle');
-  var loginCard = document.getElementById('login-card');
-  var superBadge = document.getElementById('super-badge');
-  var loginSub = document.getElementById('login-sub');
-  var normalSub = loginSub.textContent;
-
-  superToggle.addEventListener('change', function () {
-    var on = superToggle.checked;
-    loginCard.classList.toggle('super-mode', on);
-    superBadge.classList.toggle('show', on);
-    loginSub.textContent = on
-      ? 'Sign in with your super admin account for live revenue, team, and audit access.'
-      : normalSub;
-  });
-
   var forgotLink = document.getElementById('forgot-link');
   var forgotSection = document.getElementById('forgot-section');
   var forgotForm = document.getElementById('forgot-form');
@@ -169,7 +161,7 @@
 
     var redirectTo = location.origin + location.pathname.replace(/login\.html$/, '') + 'reset-password.html';
 
-    sb.auth.resetPasswordForEmail(email, { redirectTo: redirectTo }).catch(function () {
+    (window.nopauseSb ? window.nopauseSb.auth.resetPasswordForEmail(email, { redirectTo: redirectTo }) : Promise.resolve()).catch(function () {
       // Intentionally ignored — the confirmation message never reveals
       // whether the email exists or the call errored, to avoid user
       // enumeration.
@@ -181,21 +173,46 @@
     });
   });
 
-  if (typeof sb === 'undefined') {
+  if (!window.nopauseSb) {
     errorEl.textContent = 'Could not load the sign-in service. Check your connection and reload the page.';
     errorEl.classList.add('show');
     document.getElementById('login-submit').disabled = true;
     return;
   }
 
-  // Already signed in and confirmed admin? Skip straight past login.
-  sb.auth.getSession().then(function (result) {
-    var session = result.data && result.data.session;
-    if (!session) return;
-    sb.from('store_admins').select('id').eq('id', session.user.id).maybeSingle().then(function (res) {
-      if (res.data) location.replace(safeNextUrl());
-    });
+  // Already signed in? Skip straight past login — auth-guard.js on the
+  // destination page re-verifies everything (roles, super admin status,
+  // the website-data bridge session) on its own.
+  window.nopauseSb.auth.getSession().then(function (result) {
+    if (result.data && result.data.session) location.replace(safeNextUrl());
   }).catch(function () { /* ignore — user can still sign in manually */ });
+
+  // After a successful sign-in (fresh or after setting a new temporary
+  // password), bridges into a website Supabase session too — see
+  // api/mint-website-session.js — then goes to the dashboard.
+  function completeSignIn(accessToken) {
+    return fetch('/api/mint-website-session', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + accessToken }
+    }).then(function (res) { return res.json().then(function (body) { return { ok: res.ok, body: body }; }); })
+      .then(function (result) {
+        if (result.ok && window.sb) {
+          return window.sb.auth.setSession({
+            access_token: result.body.access_token,
+            refresh_token: result.body.refresh_token
+          });
+        }
+        // Non-fatal: website-data pages will show their own "unable to load"
+        // state, but the NoPauseMD-backed sections still work.
+      }).finally(function () {
+        location.replace(safeNextUrl());
+      });
+  }
+
+  function showChangePasswordStep() {
+    loginForm.style.display = 'none';
+    newPasswordForm.style.display = 'block';
+  }
 
   document.getElementById('login-form').addEventListener('submit', function (e) {
     e.preventDefault();
@@ -208,44 +225,42 @@
     submitBtn.disabled = true;
     submitBtn.textContent = 'Signing in…';
 
-    var wantsSuperAdmin = superToggle.checked;
-
-    sb.auth.signInWithPassword({ email: email, password: password }).then(function (result) {
-      if (result.error || !result.data.session) throw new Error('bad_credentials');
-      return sb.from('store_admins').select('id').eq('id', result.data.session.user.id).maybeSingle();
-    }).then(function (res) {
-      if (!res || !res.data) {
-        return sb.auth.signOut().then(function () {
-          errorEl.textContent = 'That account does not have admin access to this dashboard.';
-          errorEl.classList.add('show');
-        });
-      }
-
-      if (!wantsSuperAdmin) {
-        location.replace(safeNextUrl());
-        return;
-      }
-
-      // The toggle only picks which branch to take after a real session is
-      // established — the actual authorization boundary is this server-side
-      // RPC (backed by the super_admins table / is_super_admin() function),
-      // never the client-side checkbox state.
-      return sb.rpc('is_super_admin').then(function (superRes) {
-        if (superRes.error || superRes.data !== true) {
-          return sb.auth.signOut().then(function () {
-            errorEl.textContent = 'This account does not have super admin access.';
-            errorEl.classList.add('show');
-          });
+    NopauseBackend.signIn(email, password).then(function (session) {
+      return NopauseBackend.api('/v1/me').then(function (me) {
+        if (me.mustChangePassword) {
+          showChangePasswordStep();
+          return;
         }
-        location.replace('super-admin-revenue.html');
+        return completeSignIn(session.access_token);
       });
-    }).catch(function () {
-      errorEl.textContent = 'Incorrect email or password.';
+    }).catch(function (err) {
+      errorEl.textContent = (err && err.code === 'password_change_required') ? '' : 'Incorrect email or password.';
+      if (err && err.code === 'password_change_required') { showChangePasswordStep(); return; }
       errorEl.classList.add('show');
     }).finally(function () {
       submitBtn.disabled = false;
       submitBtn.textContent = 'Sign In';
     });
+  });
+
+  newPasswordForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var fd = new FormData(e.target);
+    var newPassword = fd.get('new-password') || '';
+    var submitBtn = document.getElementById('new-password-submit');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Saving…';
+    errorEl.classList.remove('show');
+
+    NopauseBackend.api('/v1/me/password', { method: 'POST', body: JSON.stringify({ password: newPassword }) })
+      .then(function () { return NopauseBackend.getSession(); })
+      .then(function (session) { return completeSignIn(session.access_token); })
+      .catch(function (err) {
+        errorEl.textContent = (err && err.message) || 'Could not set that password.';
+        errorEl.classList.add('show');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Set Password & Continue';
+      });
   });
 })();
 </script>

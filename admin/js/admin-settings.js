@@ -2,12 +2,8 @@
   var esc = NopauseBackend.escapeHtml;
 
   document.addEventListener('DOMContentLoaded', function () {
-    var slot = document.getElementById('nopause-connect-slot');
-    if (!slot) return;
-    NopauseBackend.ensureSession(slot, function () {
-      loadStaff();
-      document.getElementById('add-staff-form').addEventListener('submit', addStaff);
-    });
+    loadStaff();
+    document.getElementById('add-staff-form').addEventListener('submit', addStaff);
   });
 
   function loadStaff() {

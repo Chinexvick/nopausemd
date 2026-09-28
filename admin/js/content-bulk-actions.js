@@ -3,19 +3,15 @@
   var currentType = 'knowledge';
 
   document.addEventListener('DOMContentLoaded', function () {
-    var slot = document.getElementById('nopause-connect-slot');
-    if (!slot) return;
-    NopauseBackend.ensureSession(slot, function () {
-      document.querySelectorAll('#content-type-pills .pill').forEach(function (pill) {
-        pill.addEventListener('click', function () {
-          document.querySelectorAll('#content-type-pills .pill').forEach(function (p) { p.classList.remove('active'); });
-          pill.classList.add('active');
-          currentType = pill.getAttribute('data-type');
-          load();
-        });
+    document.querySelectorAll('#content-type-pills .pill').forEach(function (pill) {
+      pill.addEventListener('click', function () {
+        document.querySelectorAll('#content-type-pills .pill').forEach(function (p) { p.classList.remove('active'); });
+        pill.classList.add('active');
+        currentType = pill.getAttribute('data-type');
+        load();
       });
-      load();
     });
+    load();
   });
 
   function titleOf(item) {

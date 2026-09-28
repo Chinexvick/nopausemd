@@ -1,5 +1,18 @@
-// Runs on every protected admin page. There is no self-signup: the only way
-// in is a session for an account that also has a row in store_admins.
+// Runs on every protected admin page. The ONE sign-in for every staff
+// member (including the super admin) is against the NoPauseMD app's own
+// backend/Supabase — see js/nopause-backend.js — never the website's
+// Supabase directly. This file:
+//   1. Verifies that sign-in and pulls the caller's role/permissions from
+//      GET /v1/me.
+//   2. Bridges into a website Supabase session too (api/mint-website-session.js),
+//      so Orders/Products/Live Chat/Contact/Bookings/Speaking Engagements —
+//      which still read the website's own database — keep working
+//      unchanged, without the admin ever signing in there directly.
+//   3. Reveals the dashboard shell with the Super Admin nav group physically
+//      removed from the DOM (not just hidden) for anyone whose /v1/me
+//      doesn't say isSuperAdmin — so non-super-admin staff never see it
+//      exists at all once the page has loaded.
+//
 // Kept out of DOMContentLoaded so it runs as early as possible — the page
 // body stays hidden (see the .auth-pending rule in style.css) until this
 // either reveals it or redirects away.
@@ -14,36 +27,74 @@
     location.replace('login.html?next=' + next + (reason ? '&reason=' + reason : ''));
   }
 
-  if (!window.sb) {
+  if (!window.NopauseBackend || !window.nopauseSb) {
     goToLogin('client_error');
     return;
   }
 
-  sb.auth.getSession().then(function (result) {
-    var session = result.data && result.data.session;
+  // Always remove the Super Admin nav group from the DOM up front, before
+  // anything else runs — it only gets put back (never re-inserted; it just
+  // never gets removed) once /v1/me confirms isSuperAdmin below. This way a
+  // non-super-admin's page never has it in the DOM at any point, not even
+  // for a frame.
+  var superNavGroup = document.getElementById('super-admin-nav-group');
+  var superNavPlaceholder = document.createComment('super-admin-nav-group removed pending role check');
+  if (superNavGroup) superNavGroup.parentNode.replaceChild(superNavPlaceholder, superNavGroup);
+
+  NopauseBackend.getSession().then(function (session) {
     if (!session) { goToLogin(); return; }
 
-    return sb.from('store_admins').select('email, full_name').eq('id', session.user.id).maybeSingle()
-      .then(function (res) {
-        if (res.error || !res.data) {
-          sb.auth.signOut().finally(function () { goToLogin('not_admin'); });
-          return;
-        }
-        window.CURRENT_ADMIN = res.data;
+    return NopauseBackend.api('/v1/me').then(function (me) {
+      if (me.mustChangePassword) {
+        // Shouldn't normally reach a dashboard page in this state (login.html
+        // handles it), but if a session lingers past a password reset, send
+        // them back through the proper flow rather than erroring here.
+        goToLogin('password_change_required');
+        return;
+      }
 
-        return sb.rpc('is_super_admin').then(function (superRes) {
-          window.CURRENT_ADMIN.isSuperAdmin = superRes.data === true;
-          revealDashboard(window.CURRENT_ADMIN);
-        }).catch(function () {
-          window.CURRENT_ADMIN.isSuperAdmin = false;
-          revealDashboard(window.CURRENT_ADMIN);
-        });
+      window.CURRENT_ADMIN = {
+        email: me.email,
+        roles: me.roles || [],
+        permissions: me.permissions || [],
+        isSuperAdmin: !!me.isSuperAdmin
+      };
+
+      if (window.CURRENT_ADMIN.isSuperAdmin && superNavPlaceholder.parentNode) {
+        superNavPlaceholder.parentNode.replaceChild(superNavGroup, superNavPlaceholder);
+      }
+
+      // Bridge into a website Supabase session for the pages that still read
+      // the website's own database directly. Non-fatal if it fails — those
+      // specific pages will show their own "unable to load" state, but the
+      // rest of the dashboard still works.
+      var bridged = window.sb ? bridgeWebsiteSession(session.access_token) : Promise.resolve();
+
+      return bridged.finally(function () {
+        revealDashboard(window.CURRENT_ADMIN);
       });
+    }).catch(function (err) {
+      if (err && err.code === 'password_change_required') { goToLogin('password_change_required'); return; }
+      goToLogin('client_error');
+    });
   }).catch(function () {
     goToLogin('client_error');
   });
 
-  sb.auth.onAuthStateChange(function (event) {
+  function bridgeWebsiteSession(accessToken) {
+    return fetch('/api/mint-website-session', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + accessToken }
+    }).then(function (res) {
+      if (!res.ok) return null;
+      return res.json();
+    }).then(function (body) {
+      if (!body || !body.access_token) return;
+      return window.sb.auth.setSession({ access_token: body.access_token, refresh_token: body.refresh_token });
+    }).catch(function () { /* see comment above — non-fatal */ });
+  }
+
+  window.nopauseSb.auth.onAuthStateChange(function (event) {
     if (event === 'SIGNED_OUT') goToLogin();
   });
 
@@ -53,10 +104,16 @@
   var IDLE_LIMIT_MS = 5 * 60 * 60 * 1000;
   var idleTimer = null;
 
+  function signOutEverywhere() {
+    var out = [window.nopauseSb.auth.signOut()];
+    if (window.sb) out.push(window.sb.auth.signOut());
+    return Promise.all(out);
+  }
+
   function resetIdleTimer() {
     if (idleTimer) clearTimeout(idleTimer);
     idleTimer = setTimeout(function () {
-      sb.auth.signOut().finally(function () { goToLogin('idle_timeout'); });
+      signOutEverywhere().finally(function () { goToLogin('idle_timeout'); });
     }, IDLE_LIMIT_MS);
   }
 
@@ -65,33 +122,24 @@
   });
   resetIdleTimer();
 
-  function initials(name, email) {
-    var source = (name || email || 'Admin').trim();
-    var parts = source.split(/\s+/).filter(Boolean);
-    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+  function initials(email) {
+    var source = (email || 'Admin').trim();
     return source.slice(0, 2).toUpperCase();
   }
 
   function revealDashboard(admin) {
-    var displayName = admin.full_name || admin.email;
-
     document.querySelectorAll('.footer-meta .name, .user-badge .u-name').forEach(function (el) {
-      el.textContent = displayName;
+      el.textContent = admin.email;
     });
     document.querySelectorAll('.footer-meta .role, .user-badge .u-role').forEach(function (el) {
-      el.textContent = 'Admin';
+      el.textContent = admin.isSuperAdmin ? 'Super Admin' : (admin.roles[0] || 'Staff');
     });
     document.querySelectorAll('.avatar-circle').forEach(function (el) {
-      el.textContent = initials(admin.full_name, admin.email);
+      el.textContent = initials(admin.email);
     });
 
     injectMobileNav();
     injectLogout();
-
-    if (!admin.isSuperAdmin) {
-      var superNavGroup = document.getElementById('super-admin-nav-group');
-      if (superNavGroup) superNavGroup.style.display = 'none';
-    }
 
     document.documentElement.classList.remove('auth-pending');
   }
@@ -104,7 +152,7 @@
     logoutBtn.setAttribute('aria-label', 'Log out');
     logoutBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>';
     logoutBtn.addEventListener('click', function () {
-      sb.auth.signOut().finally(function () { location.replace('login.html'); });
+      signOutEverywhere().finally(function () { location.replace('login.html'); });
     });
 
     document.querySelectorAll('.topbar-actions, .mobile-topbar-actions').forEach(function (el) {
@@ -113,7 +161,7 @@
 
     document.querySelectorAll('.icon-btn[title="Log out"]').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        sb.auth.signOut().finally(function () { location.replace('login.html'); });
+        signOutEverywhere().finally(function () { location.replace('login.html'); });
       });
     });
   }

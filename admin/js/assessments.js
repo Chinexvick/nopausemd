@@ -1,11 +1,7 @@
 (function () {
   var esc = NopauseBackend.escapeHtml;
 
-  document.addEventListener('DOMContentLoaded', function () {
-    var slot = document.getElementById('nopause-connect-slot');
-    if (!slot) return;
-    NopauseBackend.ensureSession(slot, load);
-  });
+  document.addEventListener('DOMContentLoaded', load);
 
   function statusBadge(v) {
     if (v.status === 'active') return '<span class="badge badge-green">Active</span>';

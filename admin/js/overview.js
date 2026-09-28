@@ -1,9 +1,5 @@
 (function () {
-  document.addEventListener('DOMContentLoaded', function () {
-    var slot = document.getElementById('nopause-connect-slot');
-    if (!slot) return;
-    NopauseBackend.ensureSession(slot, load);
-  });
+  document.addEventListener('DOMContentLoaded', load);
 
   function load() {
     NopauseBackend.api('/v1/dashboard/summary').then(function (data) {
