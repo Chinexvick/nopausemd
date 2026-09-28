@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Appointment Detail · CliniPauseMD Admin</title>
+<title>Clinical Care · CliniPauseMD Admin</title>
 <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -48,15 +48,20 @@
     </header>
 
     <main class="page-content">
-<div class="breadcrumbs"><a href="appointment-detail.html">Clinical Care</a><span>&gt;</span><span class="crumb-current">Appointment #A-6620</span></div>
       <div class="section-header">
         <div>
-          <h1 class="page-title">Appointment #A-6620</h1>
-          <p class="page-subtitle">Jane Whitfield with Dr. Amara Osei &middot; Jan 14, 2026, 3:00pm ET</p>
+          <h1 class="page-title">Clinical Care</h1>
+          <p class="page-subtitle">Consultation requests from members — claim, reply, confirm, and complete.</p>
         </div>
-        <div class="header-actions"><span class="badge badge-green">Completed</span> <a class="btn btn-secondary" href="#">View Notes</a></div>
+        <div class="header-actions"></div>
       </div>
-<div class="grid-main-side"><div class="card"><div class="card-title">Overview</div><div class="meta-row"><span class="meta-label">Type</span><span class="meta-value">Follow-up consultation</span></div><div class="meta-row"><span class="meta-label">Duration</span><span class="meta-value">30 minutes</span></div><div class="meta-row"><span class="meta-label">Modality</span><span class="meta-value">Video visit</span></div></div><div class="card"><div class="card-title">Participants</div><div class="meta-row"><span class="meta-label">Patient</span><span class="meta-value">Jane Whitfield (PT-40218)</span></div><div class="meta-row"><span class="meta-label">Clinician</span><span class="meta-value">Dr. Amara Osei</span></div></div><div class="card"><div class="card-title">Session Notes</div><p class="body-text">Patient reports improved sleep on current magnesium regimen; hot flash frequency reduced from 8/day to 3/day since starting estrogen patch. Discussed continuing current protocol and reassessing in 12 weeks. No new safety concerns identified.</p></div><div class="card"><div class="card-title">Vitals</div><div class="meta-row"><span class="meta-label">Blood Pressure</span><span class="meta-value">118/76 mmHg</span></div><div class="meta-row"><span class="meta-label">Heart Rate</span><span class="meta-value">72 bpm</span></div></div><div class="card"><div class="card-title">Administrative Details</div><div class="meta-row"><span class="meta-label">Billing Code</span><span class="meta-value">99213</span></div><div class="meta-row"><span class="meta-label">Insurance</span><span class="meta-value">Verified</span></div><div class="meta-row"><span class="meta-label">Follow-up Scheduled</span><span class="meta-value">Apr 07, 2026</span></div></div><div class="card"><div class="card-title">Care Guidelines</div><div class="meta-row"><span class="meta-label">Protocol</span><span class="meta-value"><a href="hormone-detail.html">Estrogen Patch Protocol</a></span></div></div></div>
+      <div class="table-card">
+        <table class="data-table">
+          <thead><tr><th>Member</th><th>Reason</th><th>Status</th><th>Assigned</th><th>Requested</th></tr></thead>
+          <tbody id="consultations-body"><tr><td colspan="5" class="orders-empty">Loading…</td></tr></tbody>
+        </table>
+      </div>
+      <p class="body-text" style="font-size:12px;color:var(--text-muted);margin-top:12px;">This page shows the open queue. Vitals, billing codes, and scheduled calendar visits are not part of this backend's data model — it tracks async consultation requests, not in-person appointments.</p>
     </main>
   </div>
 </div>
@@ -65,6 +70,7 @@
 <script src="js/nopause-backend.js"></script>
 <script src="js/auth-guard.js"></script>
 <script src="js/nav-badges.js"></script>
+<script src="js/consultations.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

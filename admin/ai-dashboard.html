@@ -54,86 +54,42 @@
           <h1 class="page-title">AI &amp; Intelligence</h1>
           <p class="page-subtitle">Monitor AI performance, review interactions, and manage governance.</p>
         </div>
-        <div class="header-actions"><span class="text-muted" style="font-size:12px;">Last updated 1 min ago</span><a class="btn btn-primary" href="#">Configure</a></div>
+        <div class="header-actions"></div>
       </div>
 <div class="subnav-pills"><a class="pill active" href="ai-dashboard.html">Dashboard</a><a class="pill" href="ai-review-queue.html">Review Queue</a><a class="pill" href="ai-config.html">Configuration</a></div><div class="kpi-strip">
       <div class="kpi-card">
-        <div class="kpi-label">AI Interactions</div>
-        <div class="kpi-value">45,230</div>
-        <div class="kpi-delta green"><span class="dot"></span>+12.3% this mo</div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-label">Successful Responses</div>
-        <div class="kpi-value">98.2%</div>
-        <div class="kpi-delta green"><span class="dot"></span>98% target met</div>
-      </div>
-
-      <div class="kpi-card">
-        <div class="kpi-label">Review Required</div>
-        <div class="kpi-value">127</div>
-        <div class="kpi-delta amber"><span class="dot"></span>Amber Alert level</div>
+        <div class="kpi-label">AI Coach Messages (7d)</div>
+        <div class="kpi-value" id="kpi-coach-messages">—</div>
+        <div class="kpi-delta green"><span class="dot"></span>From NoPauseMD backend</div>
       </div>
 
       <div class="kpi-card">
         <div class="kpi-label">Safety Escalations</div>
-        <div class="kpi-value">8</div>
-        <div class="kpi-delta red"><span class="dot"></span>High priority risk</div>
+        <div class="kpi-value" id="kpi-ai-escalations">—</div>
+        <div class="kpi-delta red"><span class="dot"></span>Unreviewed</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">Successful Responses</div>
+        <div class="kpi-value">Not yet available</div>
+      </div>
+
+      <div class="kpi-card">
+        <div class="kpi-label">Review Required</div>
+        <div class="kpi-value">Not yet available</div>
       </div>
 
       <div class="kpi-card">
         <div class="kpi-label">Uncertainty Events</div>
-        <div class="kpi-value">43</div>
-        <div class="kpi-delta blue"><span class="dot"></span>Under review</div>
+        <div class="kpi-value">Not yet available</div>
       </div>
 
       <div class="kpi-card">
         <div class="kpi-label">Validation Failures</div>
-        <div class="kpi-value">12</div>
-        <div class="kpi-delta amber"><span class="dot"></span>Needs adjustment</div>
+        <div class="kpi-value">Not yet available</div>
       </div>
-</div><h3 class="card-title-sm" style="margin:24px 0 12px;">Active AI Modules</h3><div class="module-grid">
-      <div class="module-card">
-        <div class="module-header"><span class="m-name">Ask CliniPauseMD</span><span class="badge badge-green">Active</span></div>
-        <div class="module-spec-row"><span>Model version</span><span>v3.2</span></div>
-        <div class="module-spec-row"><span>Prompt version</span><span>v4.1</span></div>
-        <div class="module-spec-row"><span>Evidence version</span><span>v2.0</span></div>
-      </div>
-
-      <div class="module-card">
-        <div class="module-header"><span class="m-name">Personalized Insights</span><span class="badge badge-green">Active</span></div>
-        <div class="module-spec-row"><span>Model version</span><span>v2.1</span></div>
-        <div class="module-spec-row"><span>Prompt version</span><span>v3.0</span></div>
-        <div class="module-spec-row"><span>Evidence version</span><span>v1.8</span></div>
-      </div>
-
-      <div class="module-card">
-        <div class="module-header"><span class="m-name">Pattern Insights</span><span class="badge badge-green">Active</span></div>
-        <div class="module-spec-row"><span>Model version</span><span>v1.8</span></div>
-        <div class="module-spec-row"><span>Prompt version</span><span>v2.2</span></div>
-        <div class="module-spec-row"><span>Evidence version</span><span>v1.9</span></div>
-      </div>
-
-      <div class="module-card">
-        <div class="module-header"><span class="m-name">Precision Relief</span><span class="badge badge-amber">Beta</span></div>
-        <div class="module-spec-row"><span>Model version</span><span>v2.0</span></div>
-        <div class="module-spec-row"><span>Prompt version</span><span>v1.5</span></div>
-        <div class="module-spec-row"><span>Evidence version</span><span>v1.1</span></div>
-      </div>
-
-      <div class="module-card">
-        <div class="module-header"><span class="m-name">Supplement Intelligence</span><span class="badge badge-green">Active</span></div>
-        <div class="module-spec-row"><span>Model version</span><span>v1.5</span></div>
-        <div class="module-spec-row"><span>Prompt version</span><span>v2.0</span></div>
-        <div class="module-spec-row"><span>Evidence version</span><span>v3.2</span></div>
-      </div>
-
-      <div class="module-card">
-        <div class="module-header"><span class="m-name">Hormone Intelligence</span><span class="badge badge-green">Active</span></div>
-        <div class="module-spec-row"><span>Model version</span><span>v3.0</span></div>
-        <div class="module-spec-row"><span>Prompt version</span><span>v4.0</span></div>
-        <div class="module-spec-row"><span>Evidence version</span><span>v2.8</span></div>
-      </div>
+</div><h3 class="card-title-sm" style="margin:24px 0 12px;">Kill Switch</h3><div class="module-grid" id="ai-flags-grid">
+      <div class="module-card"><div class="orders-empty">Loading…</div></div>
 </div>
     </main>
   </div>
@@ -143,6 +99,7 @@
 <script src="js/nopause-backend.js"></script>
 <script src="js/auth-guard.js"></script>
 <script src="js/nav-badges.js"></script>
+<script src="js/ai-dashboard.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

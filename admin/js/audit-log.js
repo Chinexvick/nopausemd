@@ -1,7 +1,18 @@
 (function () {
   var esc = NopauseBackend.escapeHtml;
 
-  document.addEventListener('DOMContentLoaded', load);
+  document.addEventListener('DOMContentLoaded', function () {
+    load();
+    var exportBtn = document.getElementById('export-audit-log');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        NopauseBackend.downloadCsv('/v1/exports/audit-log.csv').catch(function (err) {
+          alert('Could not export: ' + err.message);
+        });
+      });
+    }
+  });
 
   function load() {
     var body = document.getElementById('audit-body');
