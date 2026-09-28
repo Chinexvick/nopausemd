@@ -4,13 +4,12 @@
 // independent of window.sb (the website's Supabase client used by Orders, Products,
 // Live Chat, Contact Form, Bookings, Speaking Engagements and the Super Admin pages).
 //
-// TODO: fill in the NoPauseMD app's Supabase project URL + publishable (anon) key below —
-// the same values used by the mobile app's EXPO_PUBLIC_SUPABASE_URL / EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY.
-// Until these are set, every backend-powered page shows "Backend not configured yet" instead
-// of failing silently.
+// The NoPauseMD app's own Supabase project (confirmed by its table names — clinicians,
+// consultation_messages, assessment_versions, feature_flags, etc. — matching the
+// admin-backend's repositories) — separate from the website's Supabase project.
 window.NOPAUSE_BACKEND_URL = 'https://clinipausemd-admin-backend.onrender.com';
-window.NOPAUSE_SUPABASE_URL = ''; // e.g. 'https://xxxx.supabase.co'
-window.NOPAUSE_SUPABASE_ANON_KEY = '';
+window.NOPAUSE_SUPABASE_URL = 'https://efaulijkuqxwmsrvxwtc.supabase.co';
+window.NOPAUSE_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmYXVsaWprdXF4d21zcnZ4d3RjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk4MTI3OTUsImV4cCI6MjEwNTM4ODc5NX0.4phbivgGhTBA2qC3IEUzuyvXrYnmdR8VHNs_vgf506U';
 
 (function () {
   if (window.NOPAUSE_SUPABASE_URL && window.NOPAUSE_SUPABASE_ANON_KEY && typeof supabase !== 'undefined') {
