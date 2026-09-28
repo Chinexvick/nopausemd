@@ -45,6 +45,9 @@
     document.getElementById('kpi-count-week').textContent = data.week.count;
     document.getElementById('kpi-revenue-month').textContent = money(data.month.net_cents);
     document.getElementById('kpi-count-month').textContent = data.month.count;
+    document.getElementById('combined-website').textContent = money(data.month.net_cents);
+    lastWebsiteMonthCents = data.month.net_cents;
+    recomputeCombined();
     document.getElementById('kpi-revenue-year').textContent = money(data.year.net_cents);
     document.getElementById('kpi-count-year').textContent = data.year.count;
 
@@ -90,5 +93,43 @@
   whenReady(function () {
     if (!window.CURRENT_ADMIN.isSuperAdmin) { gateOut(); return; }
     loadRevenue();
+    loadAppRevenue();
   });
+
+  // NoPauseMD app revenue — separate backend, separate auth session (see nopause-backend.js).
+  // Kept fully independent of the Stripe/website revenue call above: a failure here never
+  // affects the website figures, and vice versa.
+  function loadAppRevenue() {
+    var slot = document.getElementById('nopause-connect-slot');
+    if (!slot) return;
+    NopauseBackend.ensureSession(slot, function () {
+      NopauseBackend.api('/v1/dashboard/summary').then(function (data) {
+        var s = data.subscriptions;
+        var mrrCents = s.estimatedMonthlyRecurringRevenue.cents;
+        var mrr = money(mrrCents);
+        document.getElementById('kpi-app-mrr').textContent = mrr;
+        document.getElementById('kpi-app-active').textContent = ((s.byStatus.active || 0) + (s.byStatus.past_due || 0)).toLocaleString();
+        document.getElementById('kpi-app-trialing').textContent = (s.byStatus.trialing || 0).toLocaleString();
+        document.getElementById('kpi-app-trials-ending').textContent = s.trialsEndingIn7Days;
+        document.getElementById('combined-app').textContent = mrr;
+        updateCombinedTotal(mrrCents);
+      }).catch(function (err) {
+        document.getElementById('kpi-app-mrr').textContent = 'Error';
+        document.getElementById('combined-app').textContent = err.message;
+      });
+    });
+  }
+
+  var lastWebsiteMonthCents = null;
+  var lastAppMrrCents = null;
+
+  function updateCombinedTotal(appMrrCents) {
+    lastAppMrrCents = appMrrCents;
+    recomputeCombined();
+  }
+
+  function recomputeCombined() {
+    if (lastWebsiteMonthCents == null || lastAppMrrCents == null) return;
+    document.getElementById('combined-total').innerHTML = '<strong>' + money(lastWebsiteMonthCents + lastAppMrrCents) + '</strong>';
+  }
 })();

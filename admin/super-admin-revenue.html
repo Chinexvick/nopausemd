@@ -103,6 +103,34 @@
           <div class="card-title-sm">About these figures</div>
           <p class="body-text">Net revenue subtracts any refunded amount from each charge; gross is the original charge amount before refunds. Figures come live from Stripe (currency: USD) and are not cached.</p>
         </div>
+
+        <h3 class="card-title-sm" style="margin:24px 0 12px;">NoPauseMD App Revenue</h3>
+        <div id="nopause-connect-slot"></div>
+        <div class="kpi-strip">
+          <div class="kpi-card">
+            <div class="kpi-label">App MRR (estimate)</div>
+            <div class="kpi-value" id="kpi-app-mrr">—</div>
+            <div class="kpi-delta blue"><span class="dot"></span>From list prices, before discounts</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Active + Past-due Subscribers</div>
+            <div class="kpi-value" id="kpi-app-active">—</div>
+            <div class="kpi-delta green"><span class="dot"></span><span id="kpi-app-trialing">—</span> trialing</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Trials Ending in 7 Days</div>
+            <div class="kpi-value" id="kpi-app-trials-ending">—</div>
+            <div class="kpi-delta amber"><span class="dot"></span>Conversion opportunity</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Combined Monthly Revenue</div>
+          <div class="meta-row"><span class="meta-label">Website (Stripe, this month so far)</span><span class="meta-value" id="combined-website">—</span></div>
+          <div class="meta-row"><span class="meta-label">NoPauseMD App (estimated MRR)</span><span class="meta-value" id="combined-app">—</span></div>
+          <div class="meta-row"><span class="meta-label"><strong>Combined</strong></span><span class="meta-value" id="combined-total"><strong>—</strong></span></div>
+          <p class="body-text" style="margin-top:10px;font-size:12px;color:var(--text-muted);">These two figures are not directly comparable: the website number is actual revenue collected this month, while the app number is an estimated recurring run-rate from list prices. Shown together for a single view, not as a true combined total.</p>
+        </div>
       </div>
 
 </main>
@@ -112,6 +140,7 @@
 <script src="js/supabase-client.js"></script>
 <script src="js/auth-guard.js"></script>
 <script src="js/nav-badges.js"></script>
+<script src="js/nopause-backend.js"></script>
 <script src="js/super-admin-revenue.js"></script>
 <script src="js/main.js"></script>
 </body>
