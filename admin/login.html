@@ -100,9 +100,9 @@
         <label>Email</label>
         <input type="email" name="forgot-email" required>
       </div>
-      <button type="submit" class="login-submit" id="forgot-submit" style="background: var(--text-dark);">Send Reset Link</button>
+      <button type="submit" class="login-submit" id="forgot-submit" style="background: var(--text-dark);">Send Reset Code</button>
     </form>
-    <p class="forgot-confirm" id="forgot-confirm">If an account exists for that email, a reset link has been sent.</p>
+    <p class="forgot-confirm" id="forgot-confirm">If an account exists for that email, a reset code has been sent. <a id="forgot-confirm-link" href="reset-password.html">Enter your code here</a>.</p>
   </div>
 
   <p class="login-note">CliniPauseMD internal admin access only.</p>
@@ -159,15 +159,15 @@
     forgotSubmit.textContent = 'Sending…';
     forgotConfirm.classList.remove('show');
 
-    var redirectTo = location.origin + location.pathname.replace(/login\.html$/, '') + 'reset-password.html';
-
-    (window.nopauseSb ? window.nopauseSb.auth.resetPasswordForEmail(email, { redirectTo: redirectTo }) : Promise.resolve()).catch(function () {
+    (window.nopauseSb ? window.nopauseSb.auth.resetPasswordForEmail(email) : Promise.resolve()).catch(function () {
       // Intentionally ignored — the confirmation message never reveals
       // whether the email exists or the call errored, to avoid user
       // enumeration.
     }).finally(function () {
       forgotSubmit.disabled = false;
-      forgotSubmit.textContent = 'Send Reset Link';
+      forgotSubmit.textContent = 'Send Reset Code';
+      var link = document.getElementById('forgot-confirm-link');
+      if (link && email) link.href = 'reset-password.html?email=' + encodeURIComponent(email);
       forgotConfirm.classList.add('show');
       forgotForm.reset();
     });
