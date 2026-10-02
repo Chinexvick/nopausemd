@@ -91,19 +91,7 @@
     <button type="submit" class="login-submit" id="new-password-submit">Set Password &amp; Continue</button>
   </form>
 
-  <button type="button" class="forgot-link" id="forgot-link">Forgot password?</button>
-
-  <div class="forgot-section" id="forgot-section">
-    <p>Enter your admin email and we'll send you a reset link if an account exists.</p>
-    <form id="forgot-form">
-      <div class="login-field">
-        <label>Email</label>
-        <input type="email" name="forgot-email" required>
-      </div>
-      <button type="submit" class="login-submit" id="forgot-submit" style="background: var(--text-dark);">Send Reset Code</button>
-    </form>
-    <p class="forgot-confirm" id="forgot-confirm">If an account exists for that email, a reset code has been sent. <a id="forgot-confirm-link" href="reset-password.html">Enter your code here</a>.</p>
-  </div>
+  <a href="reset-password.html" class="forgot-link" id="forgot-link" style="display:inline-block; text-decoration:none;">Forgot password?</a>
 
   <p class="login-note">CliniPauseMD internal admin access only.</p>
 </div>
@@ -140,38 +128,6 @@
     errorEl.textContent = 'You were signed out after 5 hours of inactivity. Please sign in again.';
     errorEl.classList.add('show');
   }
-
-  var forgotLink = document.getElementById('forgot-link');
-  var forgotSection = document.getElementById('forgot-section');
-  var forgotForm = document.getElementById('forgot-form');
-  var forgotConfirm = document.getElementById('forgot-confirm');
-  var forgotSubmit = document.getElementById('forgot-submit');
-
-  forgotLink.addEventListener('click', function () {
-    forgotSection.classList.toggle('show');
-  });
-
-  forgotForm.addEventListener('submit', function (e) {
-    e.preventDefault();
-    var fd = new FormData(e.target);
-    var email = (fd.get('forgot-email') || '').trim();
-    forgotSubmit.disabled = true;
-    forgotSubmit.textContent = 'Sending…';
-    forgotConfirm.classList.remove('show');
-
-    (window.nopauseSb ? window.nopauseSb.auth.resetPasswordForEmail(email) : Promise.resolve()).catch(function () {
-      // Intentionally ignored — the confirmation message never reveals
-      // whether the email exists or the call errored, to avoid user
-      // enumeration.
-    }).finally(function () {
-      forgotSubmit.disabled = false;
-      forgotSubmit.textContent = 'Send Reset Code';
-      var link = document.getElementById('forgot-confirm-link');
-      if (link && email) link.href = 'reset-password.html?email=' + encodeURIComponent(email);
-      forgotConfirm.classList.add('show');
-      forgotForm.reset();
-    });
-  });
 
   if (!window.nopauseSb) {
     errorEl.textContent = 'Could not load the sign-in service. Check your connection and reload the page.';
