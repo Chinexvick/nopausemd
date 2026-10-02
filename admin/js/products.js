@@ -1,6 +1,6 @@
 (function () {
-  var grid = document.getElementById('products-grid');
-  if (!grid) return;
+  var tbody = document.getElementById('products-tbody');
+  if (!tbody) return;
 
   var products = [];
   var activeFilter = 'active';
@@ -12,18 +12,11 @@
     });
   }
   function money(cents) { return '$' + (Number(cents || 0) / 100).toFixed(2); }
-  function toCents(dollars) { return Math.round(Number(dollars) * 100); }
-
-  function slugify(name) {
-    return String(name || '').toLowerCase().trim()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '') || 'product';
-  }
 
   async function loadProducts() {
     var res = await sb.from('store_products').select('*').order('sort_order', { ascending: true });
     if (res.error) {
-      grid.innerHTML = '<div class="orders-empty">Unable to load products: ' + escapeHtml(res.error.message) + '</div>';
+      tbody.innerHTML = '<tr><td colspan="5" class="orders-empty">Unable to load products: ' + escapeHtml(res.error.message) + '</td></tr>';
       return;
     }
     products = res.data || [];
@@ -40,37 +33,42 @@
   function render() {
     var visible = products.filter(matches);
     if (!visible.length) {
-      grid.innerHTML = '<div class="orders-empty">No products in this view.</div>';
+      tbody.innerHTML = '<tr><td colspan="5" class="orders-empty">No products in this view.</td></tr>';
       return;
     }
 
-    grid.innerHTML = visible.map(function (p) {
+    tbody.innerHTML = visible.map(function (p) {
+      var thumb = p.image_url
+        ? '<img class="product-thumb" src="' + escapeHtml(p.image_url) + '" alt="">'
+        : '<div class="product-thumb-placeholder"></div>';
+
       return (
-        '<div class="card" style="padding:0;overflow:hidden;">' +
-          '<div style="height:160px;background:#f5f6f7;overflow:hidden;">' +
-            (p.image_url ? '<img src="' + escapeHtml(p.image_url) + '" alt="' + escapeHtml(p.name) + '" style="width:100%;height:100%;object-fit:cover;">' : '') +
-          '</div>' +
-          '<div style="padding:16px;">' +
-            '<div class="badge-row" style="margin-bottom:8px;">' +
-              '<span class="badge ' + (p.active ? 'badge-green' : 'badge-grey') + '"><span class="badge-dot"></span>' + (p.active ? 'Active' : 'Inactive') + '</span>' +
-              (p.category ? '<span class="badge badge-blue">' + escapeHtml(p.category) + '</span>' : '') +
+        '<tr data-id="' + p.id + '">' +
+          '<td><div class="name-cell">' + thumb + '<span class="cell-name">' + escapeHtml(p.name) + '</span></div></td>' +
+          '<td>' + (p.category ? escapeHtml(p.category) : '<span class="cell-sub">—</span>') + '</td>' +
+          '<td>' + money(p.price_cents) + '</td>' +
+          '<td><span class="badge ' + (p.active ? 'badge-green' : 'badge-grey') + '"><span class="badge-dot"></span>' + (p.active ? 'Active' : 'Inactive') + '</span></td>' +
+          '<td>' +
+            '<div class="row-actions">' +
+              '<span class="toggle-switch' + (p.active ? ' on' : '') + '" data-toggle-id="' + p.id + '" data-toggle-active="' + p.active + '" title="' + (p.active ? 'Deactivate' : 'Activate') + '"></span>' +
+              '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>' +
             '</div>' +
-            '<div style="font-weight:600;font-size:14px;margin-bottom:4px;">' + escapeHtml(p.name) + '</div>' +
-            '<div style="font-size:13px;color:var(--text-muted);margin-bottom:10px;">' + money(p.price_cents) + '</div>' +
-            '<div style="display:flex;gap:8px;">' +
-              '<button type="button" class="btn btn-secondary" data-edit-id="' + p.id + '" style="flex:1;">Edit</button>' +
-              '<button type="button" class="btn ' + (p.active ? 'btn-secondary' : 'btn-primary') + '" data-toggle-id="' + p.id + '" data-toggle-active="' + p.active + '" style="flex:1;">' + (p.active ? 'Deactivate' : 'Activate') + '</button>' +
-            '</div>' +
-          '</div>' +
-        '</div>'
+          '</td>' +
+        '</tr>'
       );
     }).join('');
 
-    grid.querySelectorAll('[data-edit-id]').forEach(function (btn) {
-      btn.addEventListener('click', function () { openForm(products.find(function (p) { return p.id === btn.getAttribute('data-edit-id'); })); });
+    tbody.querySelectorAll('tr[data-id]').forEach(function (row) {
+      row.addEventListener('click', function (e) {
+        if (e.target.closest('[data-toggle-id]')) return;
+        location.href = 'product-edit.html?id=' + encodeURIComponent(row.getAttribute('data-id'));
+      });
     });
-    grid.querySelectorAll('[data-toggle-id]').forEach(function (btn) {
-      btn.addEventListener('click', function () { toggleActive(btn.getAttribute('data-toggle-id'), btn.getAttribute('data-toggle-active') !== 'true'); });
+    tbody.querySelectorAll('[data-toggle-id]').forEach(function (toggle) {
+      toggle.addEventListener('click', function (e) {
+        e.stopPropagation();
+        toggleActive(toggle.getAttribute('data-toggle-id'), toggle.getAttribute('data-toggle-active') !== 'true');
+      });
     });
   }
 
@@ -78,110 +76,6 @@
     await sb.from('store_products').update({ active: nextActive }).eq('id', id);
     loadProducts();
   }
-
-  // ---------- Add / Edit form ----------
-  var formCard = document.getElementById('product-form-card');
-  var form = document.getElementById('product-form');
-  var errorEl = document.getElementById('pf-error');
-  var uploadedImageUrl = '';
-
-  function openForm(product) {
-    form.reset();
-    errorEl.classList.remove('show');
-    document.getElementById('pf-image-preview').innerHTML = '';
-    uploadedImageUrl = product ? (product.image_url || '') : '';
-
-    document.getElementById('product-form-title').textContent = product ? 'Edit Product' : 'Add Product';
-    document.getElementById('pf-id').value = product ? product.id : '';
-    document.getElementById('pf-name').value = product ? product.name : '';
-    document.getElementById('pf-price').value = product ? (product.price_cents / 100).toFixed(2) : '';
-    document.getElementById('pf-category').value = product ? (product.category || '') : '';
-    document.getElementById('pf-sort').value = product ? product.sort_order : 0;
-    document.getElementById('pf-description').value = product ? (product.description || '') : '';
-    document.getElementById('pf-image-url').value = uploadedImageUrl;
-
-    if (uploadedImageUrl) {
-      document.getElementById('pf-image-preview').innerHTML = '<img src="' + uploadedImageUrl + '" style="max-width:160px;border-radius:8px;">';
-    }
-
-    formCard.style.display = 'block';
-    formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-
-  document.getElementById('add-product-btn').addEventListener('click', function () { openForm(null); });
-  document.getElementById('pf-cancel').addEventListener('click', function () { formCard.style.display = 'none'; });
-
-  document.getElementById('pf-image-file').addEventListener('change', async function (e) {
-    var file = e.target.files[0];
-    if (!file) return;
-
-    var preview = document.getElementById('pf-image-preview');
-    preview.innerHTML = 'Uploading…';
-
-    var ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-    var path = Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.' + ext;
-
-    var uploadRes = await sb.storage.from('product-images').upload(path, file, { upsert: true, contentType: file.type });
-    if (uploadRes.error) {
-      preview.innerHTML = '<span style="color:#c0392b;">Upload failed: ' + escapeHtml(uploadRes.error.message) + '</span>';
-      return;
-    }
-
-    var pub = sb.storage.from('product-images').getPublicUrl(path);
-    uploadedImageUrl = pub.data.publicUrl;
-    document.getElementById('pf-image-url').value = uploadedImageUrl;
-    preview.innerHTML = '<img src="' + uploadedImageUrl + '" style="max-width:160px;border-radius:8px;">';
-  });
-
-  form.addEventListener('submit', async function (e) {
-    e.preventDefault();
-    var id = document.getElementById('pf-id').value;
-    var name = document.getElementById('pf-name').value.trim();
-    var priceDollars = document.getElementById('pf-price').value;
-    var category = document.getElementById('pf-category').value.trim() || null;
-    var sortOrder = parseInt(document.getElementById('pf-sort').value, 10) || 0;
-    var description = document.getElementById('pf-description').value.trim() || null;
-
-    if (!name || !priceDollars || isNaN(Number(priceDollars)) || Number(priceDollars) < 0) {
-      errorEl.classList.add('show');
-      return;
-    }
-    errorEl.classList.remove('show');
-
-    var saveBtn = document.getElementById('pf-save');
-    saveBtn.disabled = true;
-    saveBtn.textContent = 'Saving…';
-
-    var payload = {
-      name: name,
-      price_cents: toCents(priceDollars),
-      category: category,
-      sort_order: sortOrder,
-      description: description,
-      image_url: uploadedImageUrl || null
-    };
-
-    var res;
-    if (id) {
-      res = await sb.from('store_products').update(payload).eq('id', id);
-    } else {
-      payload.slug = slugify(name) + '-' + Date.now().toString(36);
-      payload.active = true;
-      res = await sb.from('store_products').insert(payload);
-    }
-
-    saveBtn.disabled = false;
-    saveBtn.textContent = 'Save Product';
-
-    if (res.error) {
-      errorEl.textContent = res.error.message;
-      errorEl.classList.add('show');
-      return;
-    }
-
-    formCard.style.display = 'none';
-    loadProducts();
-  });
 
   document.getElementById('product-filter-pills').addEventListener('click', function (e) {
     var pill = e.target.closest('.pill');
@@ -192,10 +86,13 @@
     render();
   });
 
-  document.getElementById('product-search').addEventListener('input', function (e) {
-    searchTerm = e.target.value.trim().toLowerCase();
-    render();
-  });
+  var searchInput = document.getElementById('product-search');
+  if (searchInput) {
+    searchInput.addEventListener('input', function (e) {
+      searchTerm = e.target.value.trim().toLowerCase();
+      render();
+    });
+  }
 
   function whenReady(cb) {
     if (window.CURRENT_ADMIN) { cb(); return; }

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Products · CliniPauseMD Admin</title>
+<title>Edit Product · CliniPauseMD Admin</title>
 <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -30,10 +30,7 @@
   <div class="main-content">
 
     <header class="topbar">
-      <div class="search-input-wrap">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-        <input class="search-input" type="text" id="product-search" placeholder="Search products..." />
-      </div>
+      <div class="search-input-wrap"></div>
       <div class="topbar-actions">
         <button class="icon-btn" title="Notifications">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -47,38 +44,44 @@
       </div>
     </header>
 
-          <div class="section-header">
-        <div>
-          <h1 class="page-title">Products</h1>
-          <p class="page-subtitle">The shared catalog shown on clinipausemd.com and drivanah.com. Click any product to edit it — nothing is hardcoded on the sites.</p>
+    <div class="section-header">
+      <div>
+        <h1 class="page-title" id="product-edit-title">Add Product</h1>
+        <p class="page-subtitle">Changes here apply immediately on clinipausemd.com and drivanah.com.</p>
+      </div>
+      <div class="header-actions"><a class="btn btn-secondary" href="products.html">&larr; Back to Products</a></div>
+    </div>
+
+    <div class="card" style="max-width:720px;">
+      <form id="product-form">
+        <input type="hidden" id="pf-id">
+        <div class="grid-2">
+          <div class="form-field"><label>Product name</label><input type="text" class="form-control" id="pf-name" required></div>
+          <div class="form-field"><label>Price (USD)</label><input type="number" class="form-control" id="pf-price" min="0" step="0.01" required placeholder="49.99"></div>
         </div>
-        <div class="header-actions"><a class="btn btn-primary" href="product-edit.html">+ Add Product</a></div>
-      </div>
+        <div class="grid-2">
+          <div class="form-field"><label>Category</label><input type="text" class="form-control" id="pf-category" placeholder="supplement, skincare, book..."></div>
+          <div class="form-field"><label>Sort order</label><input type="number" class="form-control" id="pf-sort" value="0"></div>
+        </div>
+        <div class="form-field"><label>Description</label><textarea class="form-control" id="pf-description" rows="4"></textarea></div>
+        <div class="form-field">
+          <label>Product image</label>
+          <input type="file" id="pf-image-file" accept="image/png,image/jpeg,image/webp">
+          <input type="hidden" id="pf-image-url">
+          <div id="pf-image-preview" style="margin-top:8px;"></div>
+        </div>
+        <div class="form-field" id="pf-active-row" style="display:none;flex-direction:row;align-items:center;gap:10px;">
+          <span class="toggle-switch" id="pf-active-toggle"></span>
+          <label style="margin:0;text-transform:none;letter-spacing:normal;">Active on the storefront</label>
+        </div>
+        <p id="pf-error" style="display:none;background:var(--red-bg);color:var(--red);font-size:13px;padding:10px 14px;border-radius:var(--radius-sm);margin:0;"></p>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+          <a class="btn btn-secondary" href="products.html">Cancel</a>
+          <button type="submit" class="btn btn-primary" id="pf-save">Save Product</button>
+        </div>
+      </form>
+    </div>
 
-      <div class="subnav-pills" id="product-filter-pills">
-        <span class="pill active" data-filter="active">Active</span>
-        <span class="pill" data-filter="inactive">Inactive</span>
-        <span class="pill" data-filter="all">All</span>
-      </div>
-
-      <div class="table-card">
-        <table class="data-table product-table">
-          <thead>
-            <tr>
-              <th>Product</th>
-              <th>Category</th>
-              <th>Price</th>
-              <th>Status</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="products-tbody">
-            <tr><td colspan="5" class="orders-empty">Loading products…</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-    </main>
   </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -87,6 +90,6 @@
 <script src="js/auth-guard.js"></script>
 <script src="js/nav-badges.js"></script>
 <script src="js/main.js"></script>
-<script src="js/products.js"></script>
+<script src="js/product-edit.js"></script>
 </body>
 </html>
