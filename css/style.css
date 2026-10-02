@@ -1856,6 +1856,47 @@ ul { margin: 0; padding: 0; }
   .service-grid, .approach-grid, .topic-grid, .product-grid {
     grid-template-columns: 1fr;
   }
+  /* Shop page keeps 2 up on mobile instead of stacking full-width —
+     trimmed image height, padding and type scale so cards stay airy
+     at roughly half the viewport width rather than looking squeezed. */
+  #shop-product-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+  #shop-product-grid .product-card {
+    border-radius: 16px;
+  }
+  #shop-product-grid .product-image {
+    height: 140px;
+    padding: 14px;
+  }
+  #shop-product-grid .product-body {
+    padding: 14px;
+    gap: 8px;
+  }
+  #shop-product-grid .product-body h3 {
+    font-size: 15px;
+    line-height: 1.3;
+  }
+  #shop-product-grid .product-body p {
+    font-size: 12px;
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  #shop-product-grid .badge {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+  #shop-product-grid .price-now {
+    font-size: 16px;
+  }
+  #shop-product-grid .product-btn {
+    padding: 10px;
+    font-size: 13px;
+  }
   .section { padding: 56px 0; }
   .navbar-inner { padding: 14px 20px; }
   .footer-main { flex-direction: column; }
