@@ -1281,3 +1281,6 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 .nav-badge.urgent { background: #d94848; }
 @media (max-width: 1000px) { .cx-layout { grid-template-columns: 1fr; } .cx-list { position: static; max-height: 340px; } .cx-brief { grid-template-columns: 1fr; } }
 .nav-badge[data-badge-for="consultations"].show { width: auto; min-width: 18px; height: 18px; border-radius: 9px; padding: 0 5px; font-size: 11px; font-weight: 700; color: #fff; text-align: center; line-height: 18px; animation: none; }
+
+.clinician-item.cl-row { display: block; padding: 10px 0; border-bottom: 1px solid var(--border); line-height: 1.5; }
+.clinician-item.cl-row:last-child { border-bottom: none; }

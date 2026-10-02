@@ -6,7 +6,7 @@
 <title>Safety Events · CliniPauseMD Admin</title>
 <link rel="stylesheet" href="css/style.css" />
 </head>
-<body>
+<body data-es-default="all">
 <div class="app-shell">
 
   <aside class="sidebar">
@@ -49,18 +49,16 @@
 
     <main class="page-content">
       <div class="section-header"><div><h1 class="page-title">Safety Events</h1>
-        <p class="page-subtitle"><span class="orders-live-dot"></span>Every red-flag safety check the app has raised, newest first.</p></div>
-        <div class="header-actions"><a class="btn btn-secondary" href="safety-rules.html">Escalation queue &rarr;</a></div></div>
+        <p class="page-subtitle"><span class="orders-live-dot"></span>History of every escalation the safety check raised in the app, with how each one was handled.</p></div>
+        <div class="header-actions"><a class="btn btn-secondary" href="#" id="se-export">Export CSV</a></div></div>
       <div class="lc-kpis" id="se-kpis"></div>
-      <div class="od-toolbar"><div class="subnav-pills" id="se-tabs"><span class="pill active" data-f="all">All</span><span class="pill" data-f="ai">AI coach</span><span class="pill" data-f="assessment">Assessments</span><span class="pill" data-f="tracking">Symptom logs</span><span class="pill" data-f="appointments">Appointments</span></div></div>
-      <div class="table-card"><table class="data-table"><thead><tr><th>When</th><th>Member</th><th>Raised by</th><th>Details</th><th>Status</th></tr></thead><tbody id="se-body"><tr><td colspan="5" class="orders-empty">Loading…</td></tr></tbody></table></div>
-
+      <div class="od-toolbar"><div class="subnav-pills" id="es-tabs"><span class="pill active" data-f="all">All</span><span class="pill" data-f="unreviewed">Needs review</span><span class="pill" data-f="reviewed">Reviewed</span></div><span class="od-sub"><b id="es-count">0</b> shown</span></div>
+      <div class="table-card"><table class="data-table"><thead><tr><th>When</th><th>Member</th><th>Level</th><th>Flagged message</th><th>Status</th></tr></thead><tbody id="es-body"><tr><td colspan="5" class="orders-empty">Loading…</td></tr></tbody></table></div>
       <div class="od-overlay" id="od-overlay" hidden></div>
       <aside class="od-drawer" id="od-drawer" role="dialog" aria-label="Details">
         <div class="od-drawer-head"><div><div class="od-eyebrow" id="od-eyebrow"></div><h2 id="od-title"></h2></div><button type="button" class="od-close" id="od-close" aria-label="Close">&times;</button></div>
         <div class="od-drawer-body" id="od-body"></div>
-      </aside>
-    </main>
+      </aside></main>
   </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -68,6 +66,7 @@
 <script src="js/nopause-backend.js"></script>
 <script src="js/auth-guard.js"></script>
 <script src="js/nav-badges.js"></script>
+<script src="js/escalations.js"></script>
 <script src="js/safety-events.js"></script>
 <script src="js/main.js"></script>
 </body>

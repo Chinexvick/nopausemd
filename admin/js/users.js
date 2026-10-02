@@ -15,10 +15,10 @@
     var el = document.getElementById('us-kpis');
     if (tab === 'app' && members) {
       var since = Date.now() - 30 * 864e5;
-      el.innerHTML = '<div class="lc-kpi"><span>' + members.length + '</span><label>Members</label></div>' +
-        '<div class="lc-kpi"><span>' + members.filter(function (m) { return new Date(m.joined) > since; }).length + '</span><label>Joined in 30 days</label></div>' +
-        '<div class="lc-kpi"><span>' + members.filter(function (m) { return m.logs_30d > 0; }).length + '</span><label>Active (logged symptoms, 30d)</label></div>' +
-        '<div class="lc-kpi"><span>' + members.filter(function (m) { return !m.onboarded; }).length + '</span><label>Haven\'t finished onboarding</label></div>';
+      el.innerHTML = '<div class="lc-kpi"><span>' + membersTotal + '</span><label>Members' + (term || plan || status ? ' (filtered)' : '') + '</label></div>' +
+        '<div class="lc-kpi"><span>' + members.filter(function (m) { return new Date(m.joined) > since; }).length + '</span><label>Joined in 30 days (shown)</label></div>' +
+        '<div class="lc-kpi"><span>' + members.filter(function (m) { return m.last_sign_in && new Date(m.last_sign_in) > since; }).length + '</span><label>Signed in last 30 days (shown)</label></div>' +
+        '<div class="lc-kpi"><span>' + members.filter(function (m) { return !m.onboarded; }).length + '</span><label>Not onboarded (shown)</label></div>';
     } else if (customers) {
       el.innerHTML = '<div class="lc-kpi"><span>' + customers.length + '</span><label>Website customers</label></div>' +
         '<div class="lc-kpi"><span>' + customers.filter(function (c) { return c.orders; }).length + '</span><label>Shop buyers</label></div>' +
@@ -30,15 +30,14 @@
   function render() {
     var head = document.getElementById('us-head');
     if (tab === 'app') {
-      head.innerHTML = '<tr><th>Member</th><th>Location</th><th>Joined</th><th>Last sign-in</th><th>Plan</th><th>Activity (30d)</th><th>Flags</th></tr>';
+      head.innerHTML = '<tr><th>Member</th><th>Location</th><th>Joined</th><th>Last sign-in</th><th>Plan</th></tr>';
       if (!members) return;
-      var list = members.filter(function (m) { return !term || (m.name + ' ' + (m.email || '')).toLowerCase().indexOf(term) > -1; });
-      body.innerHTML = list.length ? list.map(function (m) {
-        return '<tr data-id="' + m.id + '" style="cursor:pointer;"><td><strong>' + esc(m.name) + '</strong> ' + role(m.roles || []) + '<div class="od-sub">' + esc(m.email || '') + '</div></td>' +
+      body.innerHTML = members.length ? members.map(function (m) {
+        return '<tr data-id="' + m.id + '" style="cursor:pointer;"><td><strong>' + esc(m.name) + '</strong> ' + role(m.roles) + '<div class="od-sub">' + esc(m.email || '') + '</div></td>' +
           '<td>' + esc(m.location || '—') + '</td><td>' + date(m.joined) + (m.onboarded ? '' : '<div class="od-sub">Onboarding not finished</div>') + '</td>' +
-          '<td>' + date(m.last_sign_in) + '</td><td>' + esc(m.plan || 'free') + '</td><td>' + m.logs_30d + ' log' + (m.logs_30d === 1 ? '' : 's') + '</td>' +
-          '<td>' + (m.safety_flags ? '<span class="badge badge-red">' + m.safety_flags + ' safety</span>' : '') + (m.open_requests ? ' <span class="badge badge-amber">' + m.open_requests + ' request</span>' : '') + '</td></tr>';
-      }).join('') : '<tr><td colspan="7" class="orders-empty">No members match.</td></tr>';
+          '<td>' + date(m.last_sign_in) + '</td><td>' + esc(m.plan) + '</td></tr>';
+      }).join('') + (members.length < membersTotal ? '<tr><td colspan="5" style="text-align:center;"><button type="button" class="btn btn-secondary" id="us-more">Show more (' + (membersTotal - members.length) + ' left)</button></td></tr>' : '')
+        : '<tr><td colspan="5" class="orders-empty">No members match.</td></tr>';
     } else {
       head.innerHTML = '<tr><th>Customer</th><th>Phone</th><th>Shop orders</th><th>Consultations</th><th>Chats</th><th>Total spent</th><th>Last seen</th></tr>';
       if (!customers) return;
@@ -52,9 +51,25 @@
     kpis();
   }
 
-  function loadMembers() {
-    NopauseBackend.rpc('admin_members', { p_limit: 500 }).then(function (d) { members = d || []; render(); })
-      .catch(function (err) { if (tab === 'app') body.innerHTML = '<tr><td colspan="7" class="orders-empty">Unable to load members: ' + esc(err.message) + '</td></tr>'; });
+  var membersTotal = 0, plan = '', status = '';
+
+  function loadMembers(more) {
+    var qs = ['limit=200', 'offset=' + (more ? (members || []).length : 0)];
+    if (term) qs.push('search=' + encodeURIComponent(term));
+    if (plan) qs.push('plan=' + plan);
+    if (status) qs.push('status=' + status);
+    return NopauseBackend.api('/v1/members?' + qs.join('&')).then(function (d) {
+      var rows = (d.members || []).map(function (m) {
+        return { id: m.userId, name: m.displayName || 'Member', email: m.email, location: [m.state, m.country].filter(Boolean).join(', '),
+          joined: m.createdAt, onboarded: m.onboarded, last_sign_in: m.lastSignInAt, roles: m.roles || [],
+          plan: m.subscription ? m.subscription.plan + (m.subscription.status && m.subscription.status !== m.subscription.plan ? ' · ' + m.subscription.status : '') : 'free' };
+      });
+      members = more ? (members || []).concat(rows) : rows;
+      membersTotal = d.total || members.length;
+      render();
+    }).catch(function (err) {
+      if (tab === 'app') body.innerHTML = '<tr><td colspan="6" class="orders-empty">' + (err.status === 403 ? 'Your role does not include member records.' : 'Unable to load members: ' + esc(err.message)) + '</td></tr>';
+    });
   }
 
   async function loadCustomers() {
@@ -80,20 +95,33 @@
   }
 
   body.addEventListener('click', function (e) {
+    if (e.target.id === 'us-more') { loadMembers(true); return; }
     var tr = e.target.closest('tr[data-id]');
     if (!tr || !members) return;
-    var m = members.find(function (x) { return x.id === tr.getAttribute('data-id'); });
+    var id = tr.getAttribute('data-id');
+    var m = members.find(function (x) { return x.id === id; });
     document.getElementById('od-eyebrow').textContent = 'App member';
     document.getElementById('od-title').textContent = m.name;
-    document.getElementById('od-body').innerHTML = '<div class="od-grid2">' +
-      '<div><div class="od-label">Email</div>' + esc(m.email || '—') + '</div><div><div class="od-label">Location</div>' + esc(m.location || '—') + '</div>' +
-      '<div><div class="od-label">Joined</div>' + date(m.joined) + '</div><div><div class="od-label">Last sign-in</div>' + date(m.last_sign_in) + '</div>' +
-      '<div><div class="od-label">Plan</div>' + esc(m.plan || 'free') + '</div><div><div class="od-label">Onboarding</div>' + (m.onboarded ? 'Complete' : 'Not finished') + '</div>' +
-      '<div><div class="od-label">Symptom logs (30d)</div>' + m.logs_30d + '</div><div><div class="od-label">Safety flags (all time)</div>' + m.safety_flags + '</div></div>' +
-      '<section class="od-sec"><h3>Go to</h3><p><a class="btn btn-secondary" href="safety-events.html">Safety events</a> <a class="btn btn-secondary" href="appointment-detail.html">Clinical care</a></p>' +
-      '<p class="od-sub">Clinical records stay in the clinical tools, where every view is audited.</p></section>';
+    document.getElementById('od-body').innerHTML = '<p class="od-sub">Loading…</p>';
     document.getElementById('od-drawer').classList.add('open');
     document.getElementById('od-overlay').hidden = false;
+    NopauseBackend.api('/v1/members/' + encodeURIComponent(id)).then(function (d) {
+      var x = d.member || d, a = x.activity || {}, sc = x.score;
+      var consents = (x.consents || []).map(function (c) { return '<li><span>' + esc(String(c.consentType || c.type || '').replace(/_/g, ' ')) + '</span><b>' + (c.granted ? 'Granted' : 'Withdrawn') + '</b></li>'; }).join('');
+      document.getElementById('od-body').innerHTML = '<div class="od-grid2">' +
+        '<div><div class="od-label">Email</div>' + esc(x.email || '—') + '</div><div><div class="od-label">Location</div>' + esc(m.location || '—') + '</div>' +
+        '<div><div class="od-label">Joined</div>' + date(x.createdAt) + '</div><div><div class="od-label">Last sign-in</div>' + date(x.lastSignInAt) + '</div>' +
+        '<div><div class="od-label">Plan</div>' + esc(m.plan) + '</div><div><div class="od-label">Referral code</div>' + esc(x.referralCode || '—') + '</div>' +
+        '<div><div class="od-label">Symptom logs</div>' + (a.trackingEntries == null ? '—' : a.trackingEntries) + '</div><div><div class="od-label">Last log</div>' + date(a.lastTrackingAt) + '</div>' +
+        '<div><div class="od-label">Consultations</div>' + (a.consultations == null ? '—' : a.consultations) + ' (' + (a.openConsultations || 0) + ' open)</div>' +
+        '<div><div class="od-label">AI conversations</div>' + (a.aiConversations == null ? '—' : a.aiConversations) + (a.flaggedMessages ? ' · <span class="badge badge-red">' + a.flaggedMessages + ' flagged</span>' : '') + '</div>' +
+        '<div><div class="od-label">Health score</div>' + (sc && sc.overall != null ? sc.overall : '—') + '</div><div><div class="od-label">Referrals made</div>' + (a.referralsMade || 0) + '</div></div>' +
+        (consents ? '<section class="od-sec"><h3>Consents</h3><ul class="cx-list-plain">' + consents + '</ul></section>' : '') +
+        '<section class="od-sec"><h3>Go to</h3><p><a class="btn btn-secondary" href="consultations.html">Consultations</a> <a class="btn btn-secondary" href="safety-events.html">Safety events</a></p>' +
+        '<p class="od-sub">Viewing a member record is written to the audit log with your name.</p></section>';
+    }).catch(function (err) {
+      document.getElementById('od-body').innerHTML = '<p class="od-sub">' + (err.status === 403 ? 'Your role does not include member records.' : 'Could not load this member: ' + esc(err.message)) + '</p>';
+    });
   });
   function closeDrawer() { document.getElementById('od-drawer').classList.remove('open'); document.getElementById('od-overlay').hidden = true; }
   document.getElementById('od-close').addEventListener('click', closeDrawer);
@@ -104,16 +132,26 @@
     document.querySelectorAll('#us-tabs .pill').forEach(function (x) { x.classList.toggle('active', x === p); });
     tab = p.getAttribute('data-tab');
     body.innerHTML = '<tr><td class="orders-empty">Loading…</td></tr>';
-    if (tab === 'web' && !customers) loadCustomers(); else render();
+    document.getElementById('us-plan').style.display = tab === 'app' ? '' : 'none';
+    if (tab === 'web' && !customers) loadCustomers(); else if (tab === 'app') loadMembers(); else render();
   });
-  document.getElementById('us-search').addEventListener('input', function (e) { term = e.target.value.trim().toLowerCase(); render(); });
+  var searchTimer = null;
+  document.getElementById('us-search').addEventListener('input', function (e) {
+    term = e.target.value.trim().toLowerCase();
+    if (tab === 'app') { clearTimeout(searchTimer); searchTimer = setTimeout(function () { loadMembers(); }, 300); } else render();
+  });
+  var planSel = document.getElementById('us-plan');
+  if (planSel) planSel.addEventListener('change', function () { plan = planSel.value; if (tab === 'app') loadMembers(); });
   document.getElementById('us-export').addEventListener('click', function (e) {
     e.preventDefault();
-    var rows = tab === 'app'
-      ? [['Name', 'Email', 'Location', 'Joined', 'Last sign-in', 'Plan', 'Logs 30d']].concat((members || []).map(function (m) { return [m.name, m.email, m.location, m.joined, m.last_sign_in, m.plan, m.logs_30d]; }))
-      : [['Name', 'Email', 'Phone', 'Orders', 'Consultations', 'Chats', 'Spent', 'Last seen']].concat((customers || []).map(function (c) { return [c.name, c.email, c.phone, c.orders, c.consults, c.chats, (c.spent / 100).toFixed(2), c.last]; }));
+    if (tab === 'app') {
+      var qs = []; if (term) qs.push('search=' + encodeURIComponent(term)); if (plan) qs.push('plan=' + plan);
+      NopauseBackend.downloadCsv('/v1/exports/members.csv' + (qs.length ? '?' + qs.join('&') : '')).catch(function (err) { alert('Export failed: ' + err.message); });
+      return;
+    }
+    var rows = [['Name', 'Email', 'Phone', 'Orders', 'Consultations', 'Chats', 'Spent', 'Last seen']].concat((customers || []).map(function (c) { return [c.name, c.email, c.phone, c.orders, c.consults, c.chats, (c.spent / 100).toFixed(2), c.last]; }));
     var csv = rows.map(function (r) { return r.map(function (v) { var s = String(v == null ? '' : v); if (/^[=+\-@]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
-    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = (tab === 'app' ? 'members-' : 'customers-') + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = 'customers-' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
   });
 
   var tries = 0;
@@ -122,7 +160,11 @@
       clearInterval(iv);
       var q = new URLSearchParams(location.search).get('q');
       if (q) { term = q.toLowerCase(); document.getElementById('us-search').value = q; }
-      render(); loadMembers();
+      render();
+      var mayWeb = window.CURRENT_ADMIN.isSuperAdmin || window.CURRENT_ADMIN.permissions.indexOf('dashboard.read') > -1;
+      if (!mayWeb) { var wt = document.querySelector('#us-tabs [data-tab="web"]'); if (wt) wt.remove(); }
+      var mayMembers = window.CURRENT_ADMIN.isSuperAdmin || window.CURRENT_ADMIN.permissions.indexOf('members.read') > -1;
+      if (mayMembers) loadMembers(); else body.innerHTML = '<tr><td colspan="5" class="orders-empty">Your role does not include member records.</td></tr>';
       if (q) loadCustomers();
     }
     else if (++tries > 200) clearInterval(iv);

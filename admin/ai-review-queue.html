@@ -49,17 +49,15 @@
 
     <main class="page-content">
       <div class="section-header"><div><h1 class="page-title">AI Review Queue</h1>
-        <p class="page-subtitle"><span class="orders-live-dot"></span>Clinically spot-check what the AI coach told members. Reviews are saved with your name.</p></div></div>
+        <p class="page-subtitle"><span class="orders-live-dot"></span>Member messages the safety check rated urgent or worse. Review them, record what was done, and your name is saved with it.</p></div></div>
       <div class="subnav-pills"><a class="pill" href="ai-dashboard.html">Dashboard</a><a class="pill active" href="ai-review-queue.html">Review Queue</a></div>
-      <div class="od-toolbar"><div class="subnav-pills" id="aq-tabs"><span class="pill active" data-f="pending">Pending review</span><span class="pill" data-f="safety">Safety replies</span><span class="pill" data-f="reviewed">Reviewed</span><span class="pill" data-f="all">All</span></div></div>
-      <div class="table-card"><table class="data-table"><thead><tr><th>When</th><th>Member asked</th><th>Reply type</th><th>Status</th></tr></thead><tbody id="aq-body"><tr><td colspan="4" class="orders-empty">Loading…</td></tr></tbody></table></div>
-
+      <div class="od-toolbar"><div class="subnav-pills" id="es-tabs"><span class="pill active" data-f="unreviewed">Needs review</span><span class="pill" data-f="reviewed">Reviewed</span><span class="pill" data-f="all">All</span></div><span class="od-sub"><b id="es-count">0</b> shown</span></div>
+      <div class="table-card"><table class="data-table"><thead><tr><th>When</th><th>Member</th><th>Level</th><th>Flagged message</th><th>Status</th></tr></thead><tbody id="es-body"><tr><td colspan="5" class="orders-empty">Loading…</td></tr></tbody></table></div>
       <div class="od-overlay" id="od-overlay" hidden></div>
       <aside class="od-drawer" id="od-drawer" role="dialog" aria-label="Details">
         <div class="od-drawer-head"><div><div class="od-eyebrow" id="od-eyebrow"></div><h2 id="od-title"></h2></div><button type="button" class="od-close" id="od-close" aria-label="Close">&times;</button></div>
         <div class="od-drawer-body" id="od-body"></div>
-      </aside>
-    </main>
+      </aside></main>
   </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -67,7 +65,7 @@
 <script src="js/nopause-backend.js"></script>
 <script src="js/auth-guard.js"></script>
 <script src="js/nav-badges.js"></script>
-<script src="js/ai-review.js"></script>
+<script src="js/escalations.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>
