@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Track Your Order — CliniPause</title>
+<meta name="description" content="Track your CliniPause order with your order number and email address.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="CliniPause">
+<meta property="og:title" content="Track Your Order — CliniPause">
+<meta property="og:description" content="Explore CliniPause products created or selected to support women's health and everyday wellbeing.">
+<meta property="og:url" content="https://www.clinipausemd.com/track-order.html">
+<link rel="canonical" href="https://www.clinipausemd.com/track-order.html">
+<meta property="og:image" content="https://www.clinipausemd.com/assets/images/social-preview.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Track Your Order — CliniPause">
+<meta name="twitter:description" content="Explore CliniPause products created or selected to support women's health and everyday wellbeing.">
+<meta name="twitter:image" content="https://www.clinipausemd.com/assets/images/social-preview.jpg">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baskervville:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/images/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="assets/images/favicon-16.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/images/favicon-192.png">
+<link rel="apple-touch-icon" href="assets/images/apple-touch-icon.png">
+<link rel="shortcut icon" href="assets/images/favicon.ico">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .track-hero { background: linear-gradient(160deg, #0c2a14 0%, #134d1f 60%, #1f6b2a 100%); color: #fff; padding: 72px 20px 120px; text-align: center; }
+  .track-hero h1 { font-family: var(--font-serif); font-size: clamp(32px, 5vw, 48px); margin: 0 0 12px; }
+  .track-hero p { margin: 0 auto; max-width: 520px; color: #cfe8c9; font-size: 16px; line-height: 1.6; }
+  .track-wrap { max-width: 760px; margin: -80px auto 80px; padding: 0 16px; position: relative; }
+  .track-card { background: #fff; border-radius: 24px; box-shadow: 0 20px 50px rgba(12, 42, 20, 0.14); padding: 32px 28px; }
+  .track-form { display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; align-items: end; }
+  .track-form label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--black); }
+  .track-form input { width: 100%; border: 1.5px solid var(--neutral-n30); border-radius: 12px; padding: 13px 14px; font-size: 15px; font-family: var(--font-sans); }
+  .track-form input:focus { outline: none; border-color: var(--primary-p300); }
+  .track-form .btn { height: 48px; white-space: nowrap; }
+  .track-msg { margin: 16px 0 0; font-size: 14px; color: #c0392b; min-height: 20px; }
+  .track-result { display: none; margin-top: 28px; border-top: 1px solid var(--neutral-n30); padding-top: 28px; }
+  .track-result.show { display: block; animation: trackFade .5s ease both; }
+  @keyframes trackFade { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  .track-head { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-bottom: 28px; }
+  .track-head .num { font-family: var(--font-serif); font-size: 26px; font-weight: 600; }
+  .track-head .placed { color: var(--neutral-n200); font-size: 14px; margin-top: 4px; }
+  .track-status-pill { align-self: flex-start; background: #eef8ea; color: var(--primary-p400); font-weight: 600; font-size: 13px; padding: 8px 14px; border-radius: 999px; }
+  .track-status-pill.returned { background: #fdeaea; color: #a12626; }
+  .track-road { position: relative; margin: 10px 6px 36px; height: 64px; }
+  .track-line { position: absolute; left: 22px; right: 22px; top: 22px; height: 6px; background: var(--neutral-n30); border-radius: 6px; overflow: hidden; }
+  .track-line .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: linear-gradient(90deg, var(--primary-p300), #6cbf3d); border-radius: 6px; transition: width 1.6s cubic-bezier(.22,.8,.3,1); }
+  .track-truck { position: absolute; top: -6px; left: 0; width: 44px; height: 44px; transition: left 1.6s cubic-bezier(.22,.8,.3,1); z-index: 2; filter: drop-shadow(0 4px 8px rgba(12,42,20,.25)); }
+  .track-truck svg { animation: truckBob .6s ease-in-out infinite alternate; }
+  .track-truck.arrived svg { animation: none; }
+  @keyframes truckBob { from { transform: translateY(0); } to { transform: translateY(-2px); } }
+  .track-steps { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-top: -4px; }
+  .track-step { text-align: center; opacity: .45; transition: opacity .4s ease; }
+  .track-step.done, .track-step.current { opacity: 1; }
+  .track-step .dot { width: 34px; height: 34px; border-radius: 50%; margin: 0 auto 8px; background: #fff; border: 2px solid var(--neutral-n30); display: flex; align-items: center; justify-content: center; color: var(--neutral-n80); transition: all .4s ease; }
+  .track-step.done .dot { background: var(--primary-p300); border-color: var(--primary-p300); color: #fff; }
+  .track-step.current .dot { border-color: var(--primary-p300); color: var(--primary-p300); box-shadow: 0 0 0 6px rgba(47,138,42,.14); animation: stepPulse 1.6s ease-in-out infinite; }
+  @keyframes stepPulse { 50% { box-shadow: 0 0 0 10px rgba(47,138,42,.06); } }
+  .track-step .lbl { font-size: 13px; font-weight: 600; color: var(--black); }
+  .track-step .when { font-size: 11.5px; color: var(--neutral-n200); margin-top: 2px; min-height: 15px; }
+  .track-info { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; background: var(--neutral-n20); border-radius: 16px; padding: 18px 20px; font-size: 14px; }
+  .track-info h4 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--neutral-n200); }
+  .track-info ul { margin: 0; padding: 0; list-style: none; line-height: 1.8; }
+  @media (max-width: 640px) {
+    .track-card { padding: 24px 18px; border-radius: 20px; }
+    .track-form { grid-template-columns: 1fr; }
+    .track-steps .lbl { font-size: 11px; }
+    .track-steps .when { display: none; }
+    .track-step .dot { width: 28px; height: 28px; }
+    .track-info { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) { .track-line .fill, .track-truck { transition: none; } .track-truck svg, .track-step.current .dot { animation: none; } }
+</style>
+</head>
+<body>
+
+<header class="navbar">
+  <div class="navbar-inner">
+    <a href="index.html" class="logo">
+      <img src="assets/images/logo-main-color.png" alt="CliniPause logo">
+      <span class="logo-text">CliniPause</span>
+    </a>
+    <button class="nav-toggle" aria-label="Toggle navigation"><span></span><span></span><span></span></button>
+    <div class="nav-overlay" data-nav-close></div>
+    <ul class="nav-links">
+      <li class="nav-links-close"><button aria-label="Close navigation" data-nav-close>&times;</button></li>
+      <li><a href="index.html">Home</a></li>
+      <li><a href="about.html">About</a></li>
+      <li><a href="services.html">Services</a></li>
+      <li><a href="programs.html">Programs</a></li>
+      <li><a href="shop.html">Shop</a></li>
+      <li><a href="track-order.html">Track Order</a></li>
+      <li><a href="book.html">Book</a></li>
+      <li><a href="#contact-us" data-contact-open>Contact</a></li>
+    </ul>
+    <a href="#book-consultation" data-book-open class="btn btn-primary nav-cta">
+      <img src="assets/icons/icon-phone.svg" alt="">
+      Book a Consultation
+    </a>
+  </div>
+</header>
+
+<section class="track-hero">
+  <h1>Track Your Order</h1>
+  <p>Enter the order number from your confirmation email and the email address you used at checkout.</p>
+</section>
+
+<div class="track-wrap">
+  <div class="track-card">
+    <form class="track-form" id="track-form" novalidate>
+      <div><label for="tr-order">Order number</label><input id="tr-order" name="order" placeholder="e.g. CP-10001" autocomplete="off" maxlength="20" required></div>
+      <div><label for="tr-email">Email address</label><input id="tr-email" name="email" type="email" autocomplete="email" maxlength="254" required></div>
+      <button type="submit" class="btn btn-primary" id="tr-submit">Track Order</button>
+    </form>
+    <p class="track-msg" id="tr-msg" role="alert"></p>
+    <div class="track-result" id="tr-result" aria-live="polite"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var STEPS = [
+    { key: 'awaiting_fulfillment', label: 'Confirmed' },
+    { key: 'processing', label: 'Packing' },
+    { key: 'shipped', label: 'Shipped' },
+    { key: 'out_for_delivery', label: 'Out for delivery' },
+    { key: 'delivered', label: 'Delivered' }
+  ];
+  var TRUCK = '<svg width="44" height="44" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="23" fill="#2f8a2a"/><path d="M11 18h15v12H11zM26 22h6l4 4v4H26z" fill="#fff"/><circle cx="16" cy="31" r="3" fill="#d8ad21" stroke="#fff" stroke-width="1.5"/><circle cx="31" cy="31" r="3" fill="#d8ad21" stroke="#fff" stroke-width="1.5"/></svg>';
+  var CHECK = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>';
+
+  var form = document.getElementById('track-form');
+  var msg = document.getElementById('tr-msg');
+  var result = document.getElementById('tr-result');
+  var btn = document.getElementById('tr-submit');
+
+  var params = new URLSearchParams(location.search);
+  if (params.get('order')) form.order.value = params.get('order').slice(0, 20);
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function fmt(iso) { return iso ? new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : ''; }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var order = form.order.value.trim();
+    var email = form.email.value.trim();
+    msg.textContent = '';
+    if (!order || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { msg.textContent = 'Please enter your order number and the email you used at checkout.'; return; }
+    btn.disabled = true; btn.textContent = 'Looking up…';
+    supabaseRpc('track_order', { p_order_number: order, p_email: email }).then(function (o) {
+      if (!o || !o.order_number) { result.classList.remove('show'); msg.textContent = 'We couldn’t find an order with that number and email. Please check both and try again.'; return; }
+      render(o);
+    }).catch(function () {
+      msg.textContent = 'Something went wrong. Please try again in a moment.';
+    }).finally(function () { btn.disabled = false; btn.textContent = 'Track Order'; });
+  });
+
+  function render(o) {
+    var returned = o.status === 'returned';
+    var idx = Math.max(0, STEPS.map(function (s) { return s.key; }).indexOf(o.status));
+    var when = {};
+    (o.events || []).forEach(function (e) { if (!when[e.status]) when[e.status] = e.at; });
+    if (!when.awaiting_fulfillment) when.awaiting_fulfillment = o.placed_at;
+    var label = returned ? 'Returned' : STEPS[idx].label;
+
+    result.innerHTML =
+      '<div class="track-head"><div><div class="num">' + esc(o.order_number) + '</div><div class="placed">Placed ' + esc(fmt(o.placed_at)) + '</div></div>' +
+        '<span class="track-status-pill' + (returned ? ' returned' : '') + '">' + esc(label) + '</span></div>' +
+      (returned ? '' :
+      '<div class="track-road"><div class="track-line"><div class="fill" id="tr-fill"></div></div><div class="track-truck" id="tr-truck">' + TRUCK + '</div></div>' +
+      '<div class="track-steps">' + STEPS.map(function (s, i) {
+        var cls = i < idx || (i === idx && s.key === 'delivered') ? 'done' : (i === idx ? 'current' : '');
+        return '<div class="track-step ' + cls + '"><div class="dot">' + (cls === 'done' ? CHECK : (i + 1)) + '</div><div class="lbl">' + s.label + '</div><div class="when">' + esc(i <= idx ? fmt(when[s.key]) : '') + '</div></div>';
+      }).join('') + '</div>') +
+      '<div class="track-info" style="margin-top:28px;"><div><h4>Items</h4><ul>' + (o.items || []).map(function (i) { return '<li>' + esc(i.name) + (i.quantity > 1 ? ' × ' + i.quantity : '') + '</li>'; }).join('') + '</ul></div>' +
+        '<div><h4>Delivery</h4><ul>' + (o.tracking_number ? '<li>' + esc(o.carrier || 'Carrier') + '</li><li>Tracking #: <strong>' + esc(o.tracking_number) + '</strong></li>' : '<li>Tracking details will appear here once your order ships.</li>') + '</ul></div></div>';
+    result.classList.add('show');
+
+    if (!returned) {
+      var pct = idx / (STEPS.length - 1) * 100;
+      requestAnimationFrame(function () { requestAnimationFrame(function () {
+        document.getElementById('tr-fill').style.width = pct + '%';
+        var truck = document.getElementById('tr-truck');
+        truck.style.left = 'calc(' + pct + '% - ' + (pct / 100 * 44) + 'px)';
+        if (o.status === 'delivered') setTimeout(function () { truck.classList.add('arrived'); }, 1600);
+      }); });
+    }
+  }
+
+  if (params.get('order') && params.get('email')) {
+    form.email.value = params.get('email');
+    window.addEventListener('load', function () { form.requestSubmit(); });
+  }
+})();
+</script>
+
+<footer class="site-footer">
+  <div class="leaf-decoration leaf-decoration--footer" aria-hidden="true"><svg viewBox="0 0 100 100" fill="currentColor"><path d="M50 5C20 20 10 55 30 85c5-20 15-30 30-40C75 35 70 15 50 5z"/></svg></div>
+  <div class="container">
+    <div class="footer-main">
+      <div class="footer-brand">
+        <div class="footer-logo">
+          <img src="assets/images/logo-white.png" alt="CliniPause logo">
+          <span>CliniPause</span>
+        </div>
+        <p>Clinical Care. Natural Solutions. A Healthier You.</p>
+        <p class="dim">Founded by Dr. Ivanah Thomas · Atlanta, GA</p>
+        <div class="app-badges">
+          <a href="#" class="app-badge-link" aria-label="Download on the App Store"><img src="assets/images/app-store-badge.png" alt="Download on the App Store" loading="lazy"></a>
+          <a href="#" class="app-badge-link" aria-label="Get it on Google Play"><img src="assets/images/google-play-badge.png" alt="Get it on Google Play" loading="lazy"></a>
+        </div>
+      </div>
+      <div class="footer-links">
+        <div class="footer-col">
+          <h4>Quick Links</h4>
+          <a href="index.html">Home</a>
+          <a href="about.html">About</a>
+          <a href="services.html">Services</a>
+          <a href="shop.html">Shop</a>
+          <a href="track-order.html">Track Order</a>
+          <a href="#contact-us" data-contact-open>Contact</a>
+        </div>
+        <div class="footer-col">
+          <h4>Services</h4>
+          <a href="services.html">Hormone Therapy</a>
+          <a href="services.html">Menopause Care</a>
+          <a href="services.html">Integrative Wellness</a>
+          <a href="services.html">Aesthetics</a>
+          <a href="services.html">Peptides</a>
+        </div>
+        <div class="footer-col">
+          <h4>Contact</h4>
+          <p>info@clinipause.com</p>
+        </div>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <a href="about.html">Our Team</a>
+          <a href="#contact-us" data-contact-open>Contact Us</a>
+          <a href="#">Privacy Policy</a>
+          <a href="#">Terms of Service</a>
+        </div>
+      </div>
+    </div>
+    <p class="footer-bottom">CliniPause provides education and personalized wellness guidance. It does not diagnose, prescribe, or replace care from a licensed clinician. Supplements are not intended to diagnose, treat, cure, or prevent any disease. © 2026 CliniPause. Atlanta, GA. All rights reserved.</p>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+</body>
+</html>

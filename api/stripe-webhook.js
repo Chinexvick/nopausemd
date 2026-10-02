@@ -87,6 +87,48 @@ async function notifyNewSale({ recordType, recordId, customerName, summary, amou
   }
 }
 
+function escHtml(str) {
+  return String(str == null ? '' : str).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+
+// Customer confirmation with their order number and a link to the order
+// tracker. Best-effort: never affects the payment record.
+async function sendOrderConfirmation(orderId) {
+  try {
+    const o = await callRpc('get_order_server', { p_order_id: orderId, p_webhook_secret: process.env.STOREFRONT_WEBHOOK_SECRET });
+    if (!o || !o.email || !o.order_number) return;
+    const trackUrl = 'https://www.clinipausemd.com/track-order.html?order=' + encodeURIComponent(o.order_number);
+    const rows = (o.items || []).map(function (i) {
+      return '<tr><td style="padding:10px 0; font-size:14px; color:#3a3f42; border-bottom:1px solid #eef0f2;">' + escHtml(i.name) + (i.quantity > 1 ? ' &times; ' + i.quantity : '') +
+        '</td><td style="padding:10px 0; font-size:14px; color:#121212; text-align:right; border-bottom:1px solid #eef0f2;">' + money(i.unit_price_cents * i.quantity) + '</td></tr>';
+    }).join('');
+    const first = escHtml(((o.customer_name || '').trim().split(/\s+/)[0]) || 'there');
+    const html = buildBrandedEmailHtml({
+      eyebrow: 'ORDER CONFIRMED',
+      heading: 'Thank you, ' + first + '!',
+      bodyHtml:
+        '<p style="margin:0 0 18px; font-size:15px; line-height:1.7; color:#3a3f42;">We’ve received your order and we’re getting it ready. Your order number is:</p>' +
+        '<p style="margin:0 0 22px; font-family:Georgia,serif; font-size:26px; font-weight:600; color:#2f8a2a; letter-spacing:0.04em;">' + escHtml(o.order_number) + '</p>' +
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 22px;">' + rows +
+        '<tr><td style="padding:12px 0 0; font-size:14px; font-weight:700;">Total</td><td style="padding:12px 0 0; font-size:14px; font-weight:700; text-align:right;">' + money(o.amount_cents) + '</td></tr></table>' +
+        '<p style="margin:0 0 18px; font-size:14px; line-height:1.7; color:#6b7176;">Track your order any time with your order number and this email address.</p>',
+      ctaLabel: 'Track My Order',
+      ctaUrl: trackUrl,
+      footerNote: "You're receiving this email because you placed an order at clinipausemd.com."
+    });
+    await sendBrandedEmail({
+      to: o.email,
+      subject: 'Order ' + o.order_number + ' confirmed — CliniPause',
+      html,
+      text: 'Thank you for your order ' + o.order_number + '. Track it at ' + trackUrl
+    });
+  } catch (err) {
+    console.error('stripe-webhook: order confirmation email failed', err.message);
+  }
+}
+
 function readRawBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = [];
@@ -186,6 +228,7 @@ module.exports = async (req, res) => {
           // that order_id is what order-detail.html can actually open.
           const orderId = result && result.order_id;
           if (orderId) {
+            await sendOrderConfirmation(orderId);
             const itemSummary = await summarizeItems([item]);
             await notifyNewSale({
               recordType: 'order',
@@ -215,6 +258,7 @@ module.exports = async (req, res) => {
         });
 
         if (orderId) {
+          await sendOrderConfirmation(orderId);
           const itemSummary = await summarizeItems(items);
           await notifyNewSale({
             recordType: 'order',
