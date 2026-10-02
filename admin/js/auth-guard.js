@@ -55,6 +55,7 @@
 
       var adminInfo = {
         email: me.email,
+        name: me.fullName || me.name || me.displayName || null,
         roles: me.roles || [],
         permissions: me.permissions || [],
         isSuperAdmin: !!me.isSuperAdmin

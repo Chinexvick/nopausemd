@@ -51,36 +51,58 @@
 
       <div class="section-header">
         <div>
-          <h1 class="page-title">Overview</h1>
-          <p class="page-subtitle">Welcome back, here's what's happening across CliniPauseMD today.</p>
+          <h1 class="page-title" id="ov-greeting">Overview</h1>
+          <p class="page-subtitle"><span class="orders-live-dot"></span><span id="ov-date">Live summary of the website, clinic and app.</span></p>
         </div>
-        <div class="header-actions"><a class="btn btn-secondary" href="#">Export Report</a><a class="btn btn-primary" href="#">+ New Announcement</a></div>
-      </div>
-<div class="kpi-strip">
-      <div class="kpi-card">
-        <div class="kpi-label">NoPauseMD Members</div>
-        <div class="kpi-value" id="kpi-members-total">—</div>
-        <div class="kpi-delta green"><span class="dot"></span><span id="kpi-members-delta">Loading…</span></div>
+        <div class="header-actions"><a class="btn btn-secondary" href="#" id="ov-refresh">Refresh</a></div>
       </div>
 
-      <div class="kpi-card">
-        <div class="kpi-label">Active Clinicians</div>
-        <div class="kpi-value" id="kpi-clinicians-total">—</div>
-        <div class="kpi-delta blue"><span class="dot"></span>Accepting new patients</div>
+      <h3 class="ov-h">Needs attention</h3>
+      <div class="ov-attn" id="ov-attn">
+        <a class="ov-card" href="live-chat.html" data-k="chats"><span class="ov-n">—</span><span class="ov-l">Chats waiting for staff</span><span class="ov-s"></span></a>
+        <a class="ov-card" href="orders.html" data-k="orders"><span class="ov-n">—</span><span class="ov-l">Orders to fulfil</span><span class="ov-s"></span></a>
+        <a class="ov-card" href="contact-messages.html" data-k="contact"><span class="ov-n">—</span><span class="ov-l">New contact messages</span><span class="ov-s"></span></a>
+        <a class="ov-card" href="speaking-engagements.html" data-k="speaking"><span class="ov-n">—</span><span class="ov-l">New speaking requests</span><span class="ov-s"></span></a>
+        <a class="ov-card" href="appointment-detail.html" data-k="unassigned"><span class="ov-n">—</span><span class="ov-l">Unassigned app consultations</span><span class="ov-s"></span></a>
+        <a class="ov-card" href="safety-events.html" data-k="safety"><span class="ov-n">—</span><span class="ov-l">Safety escalations to review</span><span class="ov-s"></span></a>
       </div>
 
-      <div class="kpi-card">
-        <div class="kpi-label">Unassigned Consultations</div>
-        <div class="kpi-value" id="kpi-consultations-unassigned">—</div>
-        <div class="kpi-delta amber"><span class="dot"></span><span id="kpi-consultations-urgent">—</span> urgent</div>
+      <div class="grid-main-side">
+        <div class="card">
+          <div class="ov-card-head"><div class="card-title">Website sales, last 30 days</div><div class="ov-big" id="ov-sales">—</div></div>
+          <div class="ov-sub" id="ov-sales-sub"></div>
+          <div class="ov-chart" id="ov-chart"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Today's consultations</div>
+          <div id="ov-today"><div class="orders-empty">Loading…</div></div>
+          <a class="ov-more" href="bookings.html">Open Consultations &rarr;</a>
+        </div>
       </div>
 
-      <div class="kpi-card">
-        <div class="kpi-label">Safety Escalations</div>
-        <div class="kpi-value" id="kpi-safety-escalations">—</div>
-        <div class="kpi-delta red"><span class="dot"></span>Unreviewed</div>
+      <div class="kpi-strip">
+        <div class="kpi-card"><div class="kpi-label">NoPauseMD Members</div><div class="kpi-value" id="kpi-members-total">—</div><div class="kpi-delta green"><span class="dot"></span><span id="kpi-members-delta">Loading…</span></div></div>
+        <div class="kpi-card"><div class="kpi-label">Clinicians accepting patients</div><div class="kpi-value" id="kpi-clinicians-total">—</div><div class="kpi-delta blue"><span class="dot"></span>From the app</div></div>
+        <div class="kpi-card"><div class="kpi-label">Orders in transit</div><div class="kpi-value" id="ov-transit">—</div><div class="kpi-delta blue"><span class="dot"></span>Shipped or out for delivery</div></div>
+        <div class="kpi-card"><div class="kpi-label">New newsletter sign-ups</div><div class="kpi-value" id="ov-news">—</div><div class="kpi-delta green"><span class="dot"></span>Last 30 days</div></div>
       </div>
-</div><div class="grid-main-side"><div class="card"><div class="card-title">Platform Activity (30 days)</div><div class="orders-empty">Not yet available — this section has no backend connected yet.</div></div><div class="card"><div class="card-title">Recent Activity</div><div class="timeline-list" id="recent-activity-list"><div class="orders-empty">Loading…</div></div></div></div><div class="grid-2"><div class="card"><div class="card-title">Governance Alerts</div><div class="orders-empty">Not yet available — this section has no backend connected yet.</div></div><div class="card"><div class="card-title">Content Pipeline</div><div class="orders-empty">Not yet available — this section has no backend connected yet.</div></div></div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">Team activity</div>
+          <div class="timeline-list" id="ov-activity"><div class="orders-empty">Loading…</div></div>
+        </div>
+        <div class="card" id="ov-board-card" style="display:none;">
+          <div class="card-title">Team performance, last 30 days</div>
+          <table class="ov-board"><thead><tr><th>Staff member</th><th>Consults</th><th>Chats</th><th>Order updates</th></tr></thead><tbody id="ov-board"></tbody></table>
+          <a class="ov-more" href="super-admin-audit-log.html">Full audit log &rarr;</a>
+        </div>
+        <div class="card" id="ov-app-card">
+          <div class="card-title">App activity</div>
+          <div class="timeline-list" id="recent-activity-list"><div class="orders-empty">Loading…</div></div>
+        </div>
+      </div>
+
     </main>
   </div>
 </div>
