@@ -61,10 +61,12 @@ async function sumCharges(stripe, gteSec, lteSec, dayBuckets) {
   let net = 0;
   let count = 0;
   let skippedOtherCurrency = 0;
+  const sources = emptySources();
 
   const params = {
     created: { gte: gteSec, lt: lteSec },
-    limit: 100
+    limit: 100,
+    expand: ['data.invoice']
   };
 
   const list = stripe.charges.list(params);
@@ -83,7 +85,7 @@ async function sumCharges(stripe, gteSec, lteSec, dayBuckets) {
     }
   }
 
-  return { gross_cents: gross, net_cents: net, count, skipped_other_currency: skippedOtherCurrency };
+  return { gross_cents: gross, net_cents: net, count, skipped_other_currency: skippedOtherCurrency, sources };
 
   function accumulate(charge) {
     if (charge.currency !== 'usd') { skippedOtherCurrency += 1; return; }
@@ -95,6 +97,9 @@ async function sumCharges(stripe, gteSec, lteSec, dayBuckets) {
     gross += grossAmount;
     net += netAmount;
     count += 1;
+    const src = sources[classifyCharge(charge)];
+    src.net_cents += netAmount;
+    src.count += 1;
 
     if (dayBuckets) {
       var dateKey = new Date(charge.created * 1000).toISOString().slice(0, 10);
@@ -102,6 +107,33 @@ async function sumCharges(stripe, gteSec, lteSec, dayBuckets) {
       dayBuckets[dateKey] += netAmount;
     }
   }
+}
+
+function emptySources() {
+  return {
+    shop: { net_cents: 0, count: 0 },
+    consultations: { net_cents: 0, count: 0 },
+    app: { net_cents: 0, count: 0 }
+  };
+}
+
+// Website checkouts tag their charges (or their subscription) with
+// source=website. Subscription invoices without that tag come from the
+// NoPauseMD app, which bills through the same Stripe account. Untagged
+// one-off charges predate tagging and were all website shop sales.
+function classifyCharge(charge) {
+  const meta = charge.metadata || {};
+  let tag = meta.source ? meta : null;
+  const invoice = charge.invoice && typeof charge.invoice === 'object' ? charge.invoice : null;
+  if (!tag && invoice) {
+    const subMeta = (invoice.subscription_details && invoice.subscription_details.metadata) || {};
+    if (subMeta.source) tag = subMeta;
+  }
+  if (tag && tag.source === 'website') return tag.kind === 'booking' ? 'consultations' : 'shop';
+  if (tag && tag.source === 'app') return 'app';
+  if (charge.invoice) return 'app';
+  if (/consultation/i.test(charge.description || '')) return 'consultations';
+  return 'shop';
 }
 
 // Exported for local/offline testing of the aggregation math with mocked
@@ -204,3 +236,4 @@ module.exports = async (req, res) => {
 };
 
 module.exports.aggregateCharges = aggregateCharges;
+module.exports.classifyCharge = classifyCharge;

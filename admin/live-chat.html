@@ -32,7 +32,7 @@
     <header class="topbar">
       <div class="search-input-wrap">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-        <input class="search-input" type="text" id="chat-search" placeholder="Search conversations..." />
+        <input class="search-input" type="text" id="chat-search-top" placeholder="Search conversations..." />
       </div>
       <div class="topbar-actions">
         <button class="icon-btn" title="Notifications">
@@ -53,19 +53,48 @@
           <div class="section-header">
         <div>
           <h1 class="page-title">Live Chat</h1>
-          <p class="page-subtitle"><span class="orders-live-dot"></span>Conversations from clinipausemd.com and drivanah.com, in real time.</p>
+          <p class="page-subtitle"><span class="orders-live-dot"></span>Website chats in real time. The assistant answers first, and visitors who ask for a real person land under <strong>Waiting</strong> with a summary.</p>
         </div>
+      </div>
+
+      <div class="lc-kpis">
+        <div class="lc-kpi"><span id="lc-k-waiting">0</span><label>Waiting for staff</label></div>
+        <div class="lc-kpi"><span id="lc-k-open">0</span><label>Open</label></div>
+        <div class="lc-kpi"><span id="lc-k-today">0</span><label>Closed today</label></div>
+        <div class="lc-kpi"><span id="lc-k-frt">—</span><label>Avg. first reply (7 days)</label></div>
       </div>
 
       <div class="chat-layout">
         <div class="card chat-conv-list" style="padding:0;">
+          <div class="lc-list-tools">
+            <input type="search" id="chat-search" placeholder="Search name, email or summary" autocomplete="off">
+            <div class="lc-tabs" role="tablist">
+              <button type="button" class="lc-tab active" data-filter="waiting">Waiting</button>
+              <button type="button" class="lc-tab" data-filter="open">Open</button>
+              <button type="button" class="lc-tab" data-filter="mine">Mine</button>
+              <button type="button" class="lc-tab" data-filter="closed">Closed</button>
+              <button type="button" class="lc-tab" data-filter="all">All</button>
+            </div>
+          </div>
           <div id="chat-conversations"><div class="orders-empty">Loading conversations…</div></div>
         </div>
         <div class="card chat-thread" style="padding:0;">
           <div id="chat-thread-header" class="chat-thread-header">Select a conversation</div>
+          <div id="chat-summary" class="lc-summary" style="display:none;"></div>
           <div id="chat-thread-messages" class="chat-thread-messages"></div>
+          <div id="chat-close-panel" class="lc-close-panel" style="display:none;">
+            <label for="chat-close-summary">Summary of this conversation (saved with your name)</label>
+            <textarea id="chat-close-summary" rows="3" maxlength="4000" placeholder="e.g. Answered question about 1-hour consult price, booked her for Tuesday."></textarea>
+            <div class="lc-close-actions"><button type="button" class="btn btn-secondary" id="chat-close-cancel">Cancel</button><button type="button" class="btn btn-primary" id="chat-close-confirm">Close conversation</button></div>
+          </div>
+          <div class="lc-quick" id="chat-quick" style="display:none;">
+            <button type="button" data-quick="Hi! Thanks for waiting, I'm here to help.">Greeting</button>
+            <button type="button" data-quick="You can book a video consultation any time here: https://www.clinipausemd.com/?book=1">Booking link</button>
+            <button type="button" data-quick="You can track your order here: https://www.clinipausemd.com/track-order.html (you'll need your order number and email).">Tracking link</button>
+            <button type="button" data-quick="Is there anything else I can help you with today?">Anything else?</button>
+          </div>
           <form id="chat-reply-form" class="chat-reply-form" style="display:none;">
-            <input type="text" id="chat-reply-input" placeholder="Type a reply..." autocomplete="off">
+            <input type="text" id="chat-reply-input" placeholder="Type a reply..." autocomplete="off" maxlength="4000">
             <button type="submit" class="btn btn-primary">Send</button>
           </form>
         </div>

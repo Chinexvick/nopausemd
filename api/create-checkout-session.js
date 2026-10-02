@@ -99,6 +99,7 @@ module.exports = async (req, res) => {
           quantity: 1
         }],
         metadata: { kind: 'booking', record_id: booking.id, site },
+        payment_intent_data: { metadata: { source: 'website', kind: 'booking', record_id: booking.id } },
         success_url: returnUrl + '?booked=1&booking=' + encodeURIComponent(booking.id),
         cancel_url: returnUrl + '?canceled=1'
       });
@@ -165,8 +166,12 @@ module.exports = async (req, res) => {
       // recurring, the whole session runs in subscription mode — Stripe
       // allows mixing one-time (`price_data` without `recurring`) and
       // recurring line items within a single subscription-mode session.
+      // Tag the resulting charges so revenue reporting can tell website
+      // sales apart from app subscriptions in the same Stripe account.
+      const sourceTag = { source: 'website', kind: 'order' };
       const session = await stripe.checkout.sessions.create({
         mode: hasRecurring ? 'subscription' : 'payment',
+        ...(hasRecurring ? { subscription_data: { metadata: sourceTag } } : { payment_intent_data: { metadata: sourceTag } }),
         payment_method_types: ['card'],
         phone_number_collection: { enabled: true },
         shipping_address_collection: { allowed_countries: ['US', 'CA'] },

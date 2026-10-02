@@ -45,9 +45,14 @@
     document.getElementById('kpi-count-week').textContent = data.week.count;
     document.getElementById('kpi-revenue-month').textContent = money(data.month.net_cents);
     document.getElementById('kpi-count-month').textContent = data.month.count;
-    document.getElementById('combined-website').textContent = money(data.month.net_cents);
-    lastWebsiteMonthCents = data.month.net_cents;
-    recomputeCombined();
+    ['shop', 'consultations', 'app'].forEach(function (k) {
+      var m = data.month.sources && data.month.sources[k];
+      var y = data.year.sources && data.year.sources[k];
+      document.getElementById('src-' + k + '-month').textContent = m ? money(m.net_cents) + ' (' + m.count + ')' : '—';
+      document.getElementById('src-' + k + '-year').textContent = y ? money(y.net_cents) + ' (' + y.count + ')' : '—';
+    });
+    document.getElementById('src-total-month').innerHTML = '<strong>' + money(data.month.net_cents) + '</strong>';
+    document.getElementById('src-total-year').innerHTML = '<strong>' + money(data.year.net_cents) + '</strong>';
     document.getElementById('kpi-revenue-year').textContent = money(data.year.net_cents);
     document.getElementById('kpi-count-year').textContent = data.year.count;
 
@@ -108,24 +113,9 @@
       document.getElementById('kpi-app-active').textContent = ((s.byStatus.active || 0) + (s.byStatus.past_due || 0)).toLocaleString();
       document.getElementById('kpi-app-trialing').textContent = (s.byStatus.trialing || 0).toLocaleString();
       document.getElementById('kpi-app-trials-ending').textContent = s.trialsEndingIn7Days;
-      document.getElementById('combined-app').textContent = mrr;
-      updateCombinedTotal(mrrCents);
-    }).catch(function (err) {
-      document.getElementById('kpi-app-mrr').textContent = 'Error';
-      document.getElementById('combined-app').textContent = err.message;
+    }).catch(function () {
+      document.getElementById('kpi-app-mrr').textContent = 'Unavailable';
     });
   }
 
-  var lastWebsiteMonthCents = null;
-  var lastAppMrrCents = null;
-
-  function updateCombinedTotal(appMrrCents) {
-    lastAppMrrCents = appMrrCents;
-    recomputeCombined();
-  }
-
-  function recomputeCombined() {
-    if (lastWebsiteMonthCents == null || lastAppMrrCents == null) return;
-    document.getElementById('combined-total').innerHTML = '<strong>' + money(lastWebsiteMonthCents + lastAppMrrCents) + '</strong>';
-  }
 })();

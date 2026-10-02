@@ -1175,79 +1175,422 @@ function initContactModal() {
 }
 
 /* =========================================================
-   Live chat widget — a floating bubble that opens a small
-   panel. No visitor login: a random token is kept in
-   localStorage to identify "this browser's" conversation,
-   checked server-side by every RPC call. Polls for replies
-   while open; the admin side gets true Realtime + a nav dot.
+   Chat assistant — answers common questions instantly from
+   the site's own information, and hands the visitor over to a
+   real person on request. The handoff saves the transcript and
+   a short summary to the dashboard so staff have the context.
+   No visitor login: a random token in localStorage identifies
+   "this browser's" conversation and every RPC checks it.
    ========================================================= */
 function initLiveChat() {
   var TOKEN_KEY = 'clinipause_chat_token';
   var CONV_KEY = 'clinipause_chat_conversation';
+  var BOT_KEY = 'clinipause_chat_assistant';
   var pollTimer = null;
   var backgroundPollTimer = null;
   var lastSeenCount = 0;
   var isOpen = false;
+  var mode = localStorage.getItem(CONV_KEY) ? 'agent' : 'bot';
+  var transcript = loadTranscript();
+  var missCount = 0;
+  var prices = { 30: null, 60: null };
+
+  supabaseSelect('store_products', 'select=slug,price_cents&slug=in.(video-consultation,video-consultation-60)')
+    .then(function (rows) {
+      (rows || []).forEach(function (r) {
+        if (r.slug === 'video-consultation') prices[30] = r.price_cents;
+        if (r.slug === 'video-consultation-60') prices[60] = r.price_cents;
+      });
+    }).catch(function () {});
 
   function getToken() {
     var token = localStorage.getItem(TOKEN_KEY);
     if (!token) {
-      token = 'v_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 12) + Math.random().toString(36).slice(2, 12);
+      var bytes = new Uint8Array(16);
+      (window.crypto || window.msCrypto).getRandomValues(bytes);
+      token = 'v_' + Array.prototype.map.call(bytes, function (b) { return ('0' + b.toString(16)).slice(-2); }).join('');
       localStorage.setItem(TOKEN_KEY, token);
     }
     return token;
   }
 
-  var bubble = document.createElement('button');
-  bubble.type = 'button';
-  bubble.id = 'chat-bubble';
-  bubble.setAttribute('aria-label', 'Open live chat');
-  bubble.innerHTML = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span id="chat-unread-dot" aria-hidden="true"></span>';
-  document.body.appendChild(bubble);
-
-  var panel = document.createElement('div');
-  panel.id = 'chat-panel';
-  panel.innerHTML =
-    '<div class="chat-panel-header">' +
-      '<div class="chat-panel-header-brand">' +
-        '<img src="assets/images/favicon-32.png" alt="">' +
-        '<span>Chat with CliniPause</span>' +
-      '</div>' +
-      '<button type="button" id="chat-panel-close" aria-label="Close chat">&times;</button>' +
-    '</div>' +
-    '<div class="chat-panel-body" id="chat-panel-body">' +
-      '<div class="chat-panel-intro">' +
-        '<p>Hi! Leave your name and a message and our team will reply here.</p>' +
-        '<form id="chat-intro-form">' +
-          '<input type="text" name="name" placeholder="Your name" required>' +
-          '<input type="email" name="email" placeholder="Your email (optional)">' +
-          '<textarea name="message" placeholder="How can we help?" rows="3" required></textarea>' +
-          '<button type="submit" class="btn btn-primary" style="width:100%;">Start Chat</button>' +
-        '</form>' +
-      '</div>' +
-      '<div class="chat-panel-messages" id="chat-panel-messages" style="display:none;"></div>' +
-    '</div>' +
-    '<form id="chat-panel-form" class="chat-panel-form" style="display:none;">' +
-      '<input type="text" id="chat-panel-input" placeholder="Type a message..." autocomplete="off">' +
-      '<button type="submit" aria-label="Send">&#10148;</button>' +
-    '</form>';
-  document.body.appendChild(panel);
+  function loadTranscript() {
+    try { return JSON.parse(sessionStorage.getItem(BOT_KEY)) || []; } catch (e) { return []; }
+  }
+  function saveTranscript() {
+    try { sessionStorage.setItem(BOT_KEY, JSON.stringify(transcript.slice(-40))); } catch (e) {}
+  }
 
   function escapeHtml(str) {
     return String(str == null ? '' : str).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
+  function money(cents) {
+    if (cents == null) return null;
+    return cents === 0 ? 'free' : '$' + (cents / 100).toFixed(cents % 100 ? 2 : 0);
+  }
 
-  function showUnreadDot() { bubble.classList.add('has-unread'); }
-  function hideUnreadDot() { bubble.classList.remove('has-unread'); }
+  /* ---------- Knowledge base (from the site's own pages) ---------- */
+  var LINKS = {
+    book: { label: 'Book a consultation', action: 'book' },
+    track: { label: 'Track my order', href: 'track-order.html' },
+    shop: { label: 'Visit the shop', href: 'shop.html' },
+    services: { label: 'See all services', href: 'services.html' },
+    programs: { label: 'See programs', href: 'programs.html' },
+    about: { label: 'Meet the team', href: 'about.html' },
+    human: { label: 'Talk to a real person', action: 'human' }
+  };
 
+  function consultPriceLine() {
+    var p30 = money(prices[30]), p60 = money(prices[60]);
+    if (p30 && p60) return 'A 30-minute video consultation is <strong>' + p30 + '</strong> and a 1-hour consultation is <strong>' + p60 + '</strong>.';
+    return 'We offer 30-minute and 1-hour video consultations. You\'ll see the current price when you pick a session length.';
+  }
+
+  var INTENTS = [
+    { id: 'emergency', words: ['emergency', 'chest pain', 'suicid', 'kill myself', 'overdose', 'can\'t breathe', 'cant breathe', 'heavy bleeding', 'stroke', 'faint'],
+      reply: function () { return { html: 'If this is a medical emergency, please <strong>call 911</strong> (or your local emergency number) right away. This chat can\'t help with emergencies.<br><br>If you\'re in crisis, you can call or text <strong>988</strong> to reach the Suicide &amp; Crisis Lifeline.', links: ['human'] }; } },
+    { id: 'greeting', words: ['hello', 'hi', 'hey', 'good morning', 'good afternoon', 'good evening'], exact: true,
+      reply: function () { return { html: 'Hi there! How can I help you today?', chips: true }; } },
+    { id: 'thanks', words: ['thank', 'thanks', 'appreciate', 'great', 'perfect', 'awesome'],
+      reply: function () { return { html: 'You\'re welcome! Is there anything else I can help with?', chips: true }; } },
+    { id: 'price', words: ['price', 'cost', 'how much', 'fee', 'charge', 'pay', 'expensive', 'afford', 'insurance'],
+      reply: function (t) {
+        var extra = /insurance/.test(t) ? '<br><br>For insurance questions, our team can advise on your specific plan.' : '';
+        return { html: consultPriceLine() + ' You pay securely by card when you book.' + extra, links: /insurance/.test(t) ? ['book', 'human'] : ['book'] };
+      } },
+    { id: 'book', words: ['book', 'appointment', 'schedule', 'consult', 'see a doctor', 'see the doctor', 'session', 'available', 'availability', 'slot', 'when can'],
+      reply: function () {
+        return { html: 'You can book a private video consultation with Dr. Ivanah Thomas online in a few steps: your details, then a 30-minute or 1-hour session and a time, then secure payment.<br><br>' + consultPriceLine() + '<br><br>Sessions run on weekdays, 9:00 AM to 4:00 PM Eastern Time. You\'ll get a confirmation email with your private video link and a calendar invite, plus a reminder 20 minutes before.', links: ['book'] };
+      } },
+    { id: 'reschedule', words: ['reschedule', 'cancel', 'change my appointment', 'move my appointment', 'refund', 'missed'],
+      reply: function () { return { html: 'Our care team handles rescheduling, cancellations and refunds personally, so they can find the best option for you. Tap below and a team member will pick it up.', links: ['human'] }; } },
+    { id: 'video', words: ['video', 'link', 'join', 'camera', 'microphone', 'zoom', 'call'],
+      reply: function () { return { html: 'Your private video link is in your booking confirmation email. The waiting room opens 10 minutes before your session, where you can test your camera and microphone. It works in any modern browser; nothing to install.<br><br>Can\'t find your link? A team member can resend it.', links: ['human'] }; } },
+    { id: 'track', words: ['track', 'order', 'shipping', 'shipped', 'deliver', 'package', 'where is my', 'tracking'],
+      reply: function () { return { html: 'You can follow your order live on our <strong>Track Order</strong> page. Enter your order number (it looks like <strong>CP-10001</strong> and is in your confirmation email) and the email you ordered with.', links: ['track', 'human'] }; } },
+    { id: 'shop', words: ['shop', 'product', 'supplement', 'buy', 'subscribe', 'subscription', 'store'],
+      reply: function () { return { html: 'Our shop has CliniPause wellness products. You can buy once or subscribe monthly, and checkout is secure through Stripe. Every order gets an order number so you can track it.', links: ['shop', 'track'] }; } },
+    { id: 'hormone', words: ['hormone', 'hrt', 'estrogen', 'progesterone', 'testosterone', 'bioidentical'],
+      reply: function () { return { html: 'We offer <strong>personalized hormone therapy</strong> support built around your symptoms, health history and goals. The right option is different for everyone, so it starts with a consultation.', links: ['book', 'services'] }; } },
+    { id: 'symptoms', words: ['hot flash', 'hot flush', 'night sweat', 'sleep', 'insomnia', 'mood', 'anxiety', 'brain fog', 'focus', 'memory', 'fatigue', 'tired', 'energy', 'weight', 'libido', 'dryness', 'irritab', 'symptom', 'period'],
+      reply: function () { return { html: 'Changes like hot flashes, poor sleep, mood shifts, brain fog, low energy and weight changes are very common during perimenopause and menopause, and there are effective ways to help.<br><br>CliniPause offers personalized support for each of these. I can\'t give medical advice in chat, but a consultation with Dr. Thomas is the best next step.', links: ['book', 'services'] }; } },
+    { id: 'menopause', words: ['menopause', 'perimenopause', 'postmenopause', 'change of life'],
+      reply: function () { return { html: 'CliniPause specializes in <strong>perimenopause and menopause care</strong>: personalized, evidence-informed support for symptoms like hot flashes, sleep, mood, energy, brain fog, and weight and metabolic health.', links: ['book', 'programs'] }; } },
+    { id: 'services', words: ['service', 'offer', 'treatment', 'what do you do', 'help with', 'aesthetic', 'peptide', 'o-shot', 'oshot', 'rejuvenation', 'wellness', 'weight loss'],
+      reply: function () { return { html: 'Our services include:<ul><li>Hormone therapy</li><li>Perimenopause &amp; menopause care</li><li>Integrative wellness</li><li>Weight management</li><li>Peptides</li><li>Aesthetics</li><li>Vaginal rejuvenation &amp; O-Shot</li></ul>', links: ['services', 'book'] }; } },
+    { id: 'programs', words: ['program', 'cancer', 'oncology', 'survivor', 'thrive'],
+      reply: function () { return { html: 'We run three programs:<ul><li><strong>The Cancer Thrive Program</strong>: integrative oncology and survivorship support (nutrition, fatigue and sleep, supplement safety reviews, coaching). It complements, never replaces, your oncology care.</li><li><strong>Perimenopause &amp; Menopause Wellness</strong></li><li><strong>Hormone Wellness</strong></li></ul>', links: ['programs', 'book'] }; } },
+    { id: 'team', words: ['doctor', 'dr.', 'dr ', 'ivanah', 'thomas', 'who are you', 'team', 'provider', 'qualified', 'about'],
+      reply: function () { return { html: 'CliniPause was founded by <strong>Dr. Ivanah Thomas, MD</strong>, an Integrative Medicine Specialist and women\'s health advocate, and author of <em>The CliniPause Solution Handbook</em>. She works alongside an experienced team of clinicians.', links: ['about', 'book'] }; } },
+    { id: 'hours', words: ['hours', 'open', 'when are you', 'time zone', 'timezone', 'weekend', 'saturday', 'sunday'],
+      reply: function () { return { html: 'Consultations run <strong>Monday to Friday, 9:00 AM to 4:00 PM Eastern Time</strong>. The booking calendar shows times in both clinic time and your own local time.', links: ['book'] }; } },
+    { id: 'contact', words: ['contact', 'email', 'phone', 'call you', 'reach', 'speak to', 'address', 'location', 'where are you'],
+      reply: function () { return { html: 'You can email us at <a href="mailto:info@clinipause.com">info@clinipause.com</a>, or talk to a team member right here.', links: ['human'] }; } },
+    { id: 'privacy', words: ['privacy', 'private', 'secure', 'confidential', 'data', 'hipaa'],
+      reply: function () { return { html: 'Your privacy matters to us. Each video consultation uses its own private room and a personal link that only works for your booking, and payments are handled securely by Stripe. We never see your card details.', links: ['book'] }; } },
+    { id: 'human', words: ['human', 'real person', 'agent', 'someone', 'staff', 'representative', 'talk to', 'speak with', 'nurse', ' live '],
+      reply: function () { return { html: 'Of course, I\'ll connect you with our care team.', handoff: true }; } }
+  ];
+
+  function matchIntent(text) {
+    var t = ' ' + text.toLowerCase().replace(/[^a-z0-9'\-\. ]+/g, ' ').replace(/\s+/g, ' ') + ' ';
+    if (INTENTS[0].words.some(function (w) { return t.indexOf(w) > -1; })) return { intent: INTENTS[0], t: t };
+    var best = null, bestScore = 0;
+    INTENTS.forEach(function (intent) {
+      if (intent.id === 'emergency') return;
+      var score = 0;
+      intent.words.forEach(function (w) {
+        var hit = intent.exact ? new RegExp('(^| )' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '( |$)').test(t) : t.indexOf(w) > -1;
+        if (hit) score += w.length > 5 ? 2 : 1;
+      });
+      if (intent.exact && score && t.trim().split(' ').length > 4) score = 0;
+      if (score > bestScore) { best = intent; bestScore = score; }
+    });
+    return best ? { intent: best, t: t } : null;
+  }
+
+  function answer(text) {
+    var m = matchIntent(text);
+    if (!m) {
+      missCount += 1;
+      return {
+        html: missCount > 1
+          ? 'I\'m still not sure I can answer that well. A member of our care team can help. Would you like me to connect you?'
+          : 'I\'m not sure I have the answer to that. I can help with booking, prices, our services and programs, order tracking, or connect you with a real person.',
+        links: ['human'], chips: missCount <= 1, missed: true
+      };
+    }
+    missCount = 0;
+    var r = m.intent.reply(m.t);
+    r.topic = m.intent.id;
+    return r;
+  }
+
+  /* ---------- UI ---------- */
+  var bubble = document.createElement('button');
+  bubble.type = 'button';
+  bubble.id = 'chat-bubble';
+  bubble.setAttribute('aria-label', 'Open chat');
+  bubble.innerHTML = '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span id="chat-unread-dot" aria-hidden="true"></span>';
+  document.body.appendChild(bubble);
+
+  var panel = document.createElement('div');
+  panel.id = 'chat-panel';
+  panel.setAttribute('role', 'dialog');
+  panel.setAttribute('aria-label', 'CliniPause chat');
+  panel.innerHTML =
+    '<div class="chat-panel-header">' +
+      '<div class="chat-panel-header-brand">' +
+        '<img src="assets/images/favicon-32.png" alt="">' +
+        '<div><span class="chat-title">CliniPause Assistant</span><span class="chat-status" id="chat-status"><i></i>Instant answers, real team on request</span></div>' +
+      '</div>' +
+      '<button type="button" id="chat-panel-close" aria-label="Close chat">&times;</button>' +
+    '</div>' +
+    '<div class="chat-panel-body" id="chat-panel-body">' +
+      '<div class="chat-panel-messages" id="chat-panel-messages" aria-live="polite"></div>' +
+    '</div>' +
+    '<div class="chat-handoff-bar" id="chat-handoff-bar"><button type="button" id="chat-handoff-btn">' +
+      '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg> Talk to a real person</button></div>' +
+    '<form id="chat-panel-form" class="chat-panel-form">' +
+      '<input type="text" id="chat-panel-input" placeholder="Ask me anything…" autocomplete="off" maxlength="1000" aria-label="Message">' +
+      '<button type="submit" aria-label="Send"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg></button>' +
+    '</form>';
+  document.body.appendChild(panel);
+
+  var box = document.getElementById('chat-panel-messages');
+  var statusEl = document.getElementById('chat-status');
+  var handoffBar = document.getElementById('chat-handoff-bar');
+
+  function scrollDown() { box.scrollTop = box.scrollHeight; }
+
+  function linkButtons(keys) {
+    if (!keys || !keys.length) return '';
+    return '<div class="chat-actions">' + keys.map(function (k) {
+      var l = LINKS[k];
+      if (!l) return '';
+      return l.href
+        ? '<a class="chat-action" href="' + l.href + '">' + l.label + '</a>'
+        : '<button type="button" class="chat-action' + (k === 'human' ? ' human' : '') + '" data-chat-action="' + l.action + '">' + l.label + '</button>';
+    }).join('') + '</div>';
+  }
+
+  function chipsHtml() {
+    var chips = ['How much is a consultation?', 'Book a consultation', 'Track my order', 'What services do you offer?'];
+    return '<div class="chat-chips">' + chips.map(function (c) {
+      return '<button type="button" class="chat-chip" data-chat-ask="' + escapeHtml(c) + '">' + escapeHtml(c) + '</button>';
+    }).join('') + '</div>';
+  }
+
+  function botRow(html, extra) {
+    return '<div class="chat-panel-row from-admin">' +
+      '<img class="chat-avatar" src="assets/images/favicon-32.png" alt="">' +
+      '<div class="chat-panel-col"><div class="chat-panel-bubble from-admin">' + html + '</div>' + (extra || '') + '</div></div>';
+  }
+  function visitorRow(text, cls) {
+    return '<div class="chat-panel-row from-visitor"><div class="chat-panel-bubble from-visitor' + (cls ? ' ' + cls : '') + '">' + escapeHtml(text) + '</div></div>';
+  }
+
+  function renderBot() {
+    var html = botRow('Hi! I\'m the CliniPause assistant. I can answer questions about consultations, prices, our services and your orders right away.' +
+      ' Or tap <strong>Talk to a real person</strong> any time.', transcript.length ? '' : chipsHtml());
+    transcript.forEach(function (m) {
+      html += m.from === 'bot' ? botRow(m.html || escapeHtml(m.text), linkButtons(m.links) + (m.chips ? chipsHtml() : '')) : visitorRow(m.text);
+    });
+    box.innerHTML = html;
+    scrollDown();
+  }
+
+  function htmlToText(html) {
+    var d = document.createElement('div');
+    d.innerHTML = html.replace(/<br\s*\/?>/g, '\n').replace(/<li>/g, '\n• ');
+    return (d.textContent || '').trim();
+  }
+
+  function showTyping() {
+    var el = document.createElement('div');
+    el.className = 'chat-panel-row from-admin chat-typing-row';
+    el.innerHTML = '<img class="chat-avatar" src="assets/images/favicon-32.png" alt=""><div class="chat-typing"><span></span><span></span><span></span></div>';
+    box.appendChild(el);
+    scrollDown();
+    return el;
+  }
+
+  function askBot(text) {
+    transcript.push({ from: 'visitor', text: text });
+    saveTranscript();
+    box.insertAdjacentHTML('beforeend', visitorRow(text));
+    box.querySelectorAll('.chat-chips').forEach(function (c) { c.remove(); });
+    var typing = showTyping();
+    var r = answer(text);
+    setTimeout(function () {
+      typing.remove();
+      var entry = { from: 'bot', html: r.html, text: htmlToText(r.html), links: r.links, chips: r.chips, topic: r.topic, missed: r.missed };
+      transcript.push(entry);
+      saveTranscript();
+      box.insertAdjacentHTML('beforeend', botRow(r.html, linkButtons(r.links) + (r.chips ? chipsHtml() : '')));
+      scrollDown();
+      if (r.handoff) setTimeout(showHandoffForm, 350);
+    }, 450 + Math.min(text.length * 12, 700));
+  }
+
+  /* ---------- Handoff to a real person ---------- */
+  var TOPIC_LABELS = { price: 'prices', book: 'booking a consultation', reschedule: 'rescheduling or cancelling', video: 'video call or link', track: 'order tracking',
+    shop: 'shop and products', hormone: 'hormone therapy', symptoms: 'symptoms', menopause: 'menopause care', services: 'services', programs: 'programs',
+    team: 'the care team', hours: 'opening hours', contact: 'contact details', privacy: 'privacy', emergency: 'possible emergency (shown 911 guidance)' };
+
+  function buildSummary(name) {
+    var asked = transcript.filter(function (m) { return m.from === 'visitor'; }).map(function (m) { return m.text; });
+    var topics = [];
+    transcript.forEach(function (m) {
+      if (m.from === 'bot' && m.topic && TOPIC_LABELS[m.topic] && topics.indexOf(TOPIC_LABELS[m.topic]) < 0) topics.push(TOPIC_LABELS[m.topic]);
+    });
+    var unanswered = [];
+    transcript.forEach(function (m, i) {
+      if (m.from === 'bot' && m.missed && transcript[i - 1]) unanswered.push(transcript[i - 1].text);
+    });
+    var lines = [(name || 'Visitor') + ' asked to talk to a real person' + (asked.length ? ' after ' + asked.length + ' message' + (asked.length > 1 ? 's' : '') + ' with the assistant.' : ' straight away.')];
+    if (topics.length) lines.push('Topics: ' + topics.join(', ') + '.');
+    if (unanswered.length) lines.push('Assistant could not answer: "' + unanswered.slice(-3).join('", "') + '".');
+    if (asked.length) lines.push('Last question: "' + asked[asked.length - 1].slice(0, 200) + '".');
+    return lines.join(' ');
+  }
+
+  function showHandoffForm() {
+    if (mode !== 'bot' || document.getElementById('chat-handoff-form')) { scrollDown(); return; }
+    box.insertAdjacentHTML('beforeend',
+      '<form class="chat-handoff-form" id="chat-handoff-form">' +
+        '<p>Our care team usually replies within a few minutes during clinic hours. Leave your details so we can follow up if you step away.</p>' +
+        '<input type="text" name="name" placeholder="Your name" required maxlength="120" autocomplete="name">' +
+        '<input type="email" name="email" placeholder="Email (so we can reply if you leave)" maxlength="200" autocomplete="email">' +
+        '<textarea name="message" rows="2" maxlength="1000" placeholder="Anything you\'d like the team to know? (optional)"></textarea>' +
+        '<button type="submit" class="btn btn-primary">Connect me</button>' +
+        '<p class="chat-form-error" id="chat-handoff-error"></p>' +
+      '</form>');
+    scrollDown();
+    document.getElementById('chat-handoff-form').querySelector('input').focus();
+  }
+
+  function submitHandoff(form) {
+    var fd = new FormData(form);
+    var name = String(fd.get('name') || '').trim();
+    var email = String(fd.get('email') || '').trim();
+    var note = String(fd.get('message') || '').trim();
+    if (!name) return;
+    var btn = form.querySelector('button');
+    btn.disabled = true;
+    btn.textContent = 'Connecting…';
+    var summary = buildSummary(name);
+    var convId;
+    supabaseRpc('start_chat_conversation', {
+      p_site: STOREFRONT_SITE, p_visitor_token: getToken(), p_visitor_name: name, p_visitor_email: email || null
+    }).then(function (id) {
+      convId = id;
+      var payload = transcript.map(function (m) { return { from: m.from, text: m.text }; });
+      return supabaseRpc('request_chat_handoff', { p_conversation_id: convId, p_visitor_token: getToken(), p_transcript: payload, p_summary: summary });
+    }).then(function () {
+      if (note) return supabaseRpc('send_chat_message', { p_conversation_id: convId, p_visitor_token: getToken(), p_body: note });
+    }).then(function () {
+      localStorage.setItem(CONV_KEY, convId);
+      transcript = [];
+      saveTranscript();
+      enterAgentMode(convId);
+    }).catch(function (err) {
+      btn.disabled = false;
+      btn.textContent = 'Connect me';
+      document.getElementById('chat-handoff-error').textContent = (err && err.message) || 'Could not connect. Please try again.';
+    });
+  }
+
+  /* ---------- Live conversation with staff ---------- */
+  var agentClosed = false;
+
+  function enterAgentMode(convId) {
+    mode = 'agent';
+    handoffBar.style.display = 'none';
+    panel.querySelector('.chat-title').textContent = 'CliniPause Care Team';
+    statusEl.innerHTML = '<i></i>You\'re chatting with a real person';
+    document.getElementById('chat-panel-input').placeholder = 'Type a message…';
+    fetchMessages(convId);
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(function () { if (isOpen) fetchMessages(convId); }, 3000);
+    startBackgroundPolling(convId);
+  }
+
+  function renderAgentMessages(msgs) {
+    var html = '';
+    var waiting = true;
+    msgs.forEach(function (m) {
+      if (m.sender_kind === 'system') {
+        html += '<div class="chat-system">' + escapeHtml(m.body) + '</div>';
+      } else if (m.sender_kind === 'admin') {
+        waiting = false;
+        html += botRow(escapeHtml(m.body), '<div class="chat-sender">' + escapeHtml(m.sender_name || 'CliniPause team') + ' · CliniPause team</div>');
+      } else if (m.sender_kind === 'bot') {
+        html += botRow(escapeHtml(m.body).replace(/\n/g, '<br>'), '<div class="chat-sender">Assistant</div>');
+      } else {
+        html += visitorRow(m.body);
+      }
+    });
+    var last = msgs[msgs.length - 1];
+    agentClosed = !!(last && last.sender_kind === 'system' && /^Conversation closed/.test(last.body));
+    if (agentClosed) {
+      html += '<div class="chat-actions center"><button type="button" class="chat-action" data-chat-action="restart">Start a new chat</button></div>';
+    } else if (waiting) {
+      html += '<div class="chat-system waiting"><span class="chat-pulse"></span>Waiting for a team member to join…</div>';
+    }
+    box.innerHTML = html;
+    scrollDown();
+  }
+
+  function fetchMessages(convId) {
+    return supabaseRpc('get_chat_messages_v2', { p_conversation_id: convId, p_visitor_token: getToken() }).then(function (msgs) {
+      msgs = msgs || [];
+      if (isOpen && mode === 'agent') renderAgentMessages(msgs);
+      if (msgs.length > lastSeenCount && lastSeenCount > 0) {
+        var hasNewReply = msgs.slice(lastSeenCount).some(function (m) { return m.sender_kind === 'admin'; });
+        if (hasNewReply && !isOpen) bubble.classList.add('has-unread');
+      }
+      lastSeenCount = msgs.length;
+      return msgs;
+    }).catch(function (err) {
+      if (err && /Not authorized/.test(err.message)) resetToBot();
+    });
+  }
+
+  function startBackgroundPolling(convId) {
+    if (backgroundPollTimer) clearInterval(backgroundPollTimer);
+    backgroundPollTimer = setInterval(function () { if (!isOpen) fetchMessages(convId); }, 8000);
+  }
+
+  function resetToBot() {
+    localStorage.removeItem(CONV_KEY);
+    if (pollTimer) clearInterval(pollTimer);
+    if (backgroundPollTimer) clearInterval(backgroundPollTimer);
+    pollTimer = backgroundPollTimer = null;
+    mode = 'bot';
+    agentClosed = false;
+    lastSeenCount = 0;
+    missCount = 0;
+    transcript = [];
+    saveTranscript();
+    handoffBar.style.display = '';
+    panel.querySelector('.chat-title').textContent = 'CliniPause Assistant';
+    statusEl.innerHTML = '<i></i>Instant answers, real team on request';
+    document.getElementById('chat-panel-input').placeholder = 'Ask me anything…';
+    renderBot();
+  }
+
+  /* ---------- Events ---------- */
   function open() {
     panel.classList.add('open');
     isOpen = true;
-    hideUnreadDot();
+    bubble.classList.remove('has-unread');
     var convId = localStorage.getItem(CONV_KEY);
-    if (convId) showThread(convId);
+    if (mode === 'agent' && convId) enterAgentMode(convId);
+    else renderBot();
+    setTimeout(function () { document.getElementById('chat-panel-input').focus(); }, 50);
   }
   function close() {
     panel.classList.remove('open');
@@ -1255,112 +1598,52 @@ function initLiveChat() {
     if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
   }
 
-  bubble.addEventListener('click', function () {
-    panel.classList.contains('open') ? close() : open();
-  });
+  bubble.addEventListener('click', function () { panel.classList.contains('open') ? close() : open(); });
   document.getElementById('chat-panel-close').addEventListener('click', close);
+  document.getElementById('chat-handoff-btn').addEventListener('click', showHandoffForm);
 
-  document.getElementById('chat-intro-form').addEventListener('submit', function (e) {
-    e.preventDefault();
-    var fd = new FormData(e.target);
-    var name = (fd.get('name') || '').trim();
-    var email = (fd.get('email') || '').trim();
-    var message = (fd.get('message') || '').trim();
-    if (!name || !message) return;
-
-    var submitBtn = e.target.querySelector('button');
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Starting…';
-
-    supabaseRpc('start_chat_conversation', {
-      p_site: STOREFRONT_SITE, p_visitor_token: getToken(), p_visitor_name: name, p_visitor_email: email || null
-    }).then(function (convId) {
-      localStorage.setItem(CONV_KEY, convId);
-      showThread(convId, [{ id: 'local-optimistic', sender_is_admin: false, body: message, pending: true }]);
-      return supabaseRpc('send_chat_message', { p_conversation_id: convId, p_visitor_token: getToken(), p_body: message });
-    }).then(function () {
-      var convId = localStorage.getItem(CONV_KEY);
-      fetchMessages(convId).then(function () { startBackgroundPolling(convId); });
-    }).catch(function () {
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Start Chat';
-    });
+  box.addEventListener('click', function (e) {
+    var ask = e.target.closest('[data-chat-ask]');
+    if (ask) { askBot(ask.getAttribute('data-chat-ask')); return; }
+    var act = e.target.closest('[data-chat-action]');
+    if (!act) return;
+    var a = act.getAttribute('data-chat-action');
+    if (a === 'human') showHandoffForm();
+    else if (a === 'restart') resetToBot();
+    else if (a === 'book') {
+      var trigger = document.querySelector('[data-book-open]');
+      if (trigger) { close(); trigger.click(); } else { window.location.href = '/?book=1'; }
+    }
   });
 
-  function renderMessages(msgs) {
-    var box = document.getElementById('chat-panel-messages');
-    box.innerHTML = (msgs || []).map(function (m) {
-      if (m.sender_is_admin) {
-        return '<div class="chat-panel-row from-admin">' +
-          '<img class="chat-avatar" src="assets/images/favicon-32.png" alt="CliniPause">' +
-          '<div class="chat-panel-bubble from-admin">' + escapeHtml(m.body) + '</div>' +
-        '</div>';
-      }
-      return '<div class="chat-panel-row from-visitor">' +
-        '<div class="chat-panel-bubble from-visitor' + (m.pending ? ' pending' : '') + '">' + escapeHtml(m.body) + '</div>' +
-      '</div>';
-    }).join('');
-    box.scrollTop = box.scrollHeight;
-  }
-
-  function showThread(convId, optimisticMsgs) {
-    document.querySelector('.chat-panel-intro').style.display = 'none';
-    document.getElementById('chat-panel-messages').style.display = 'flex';
-    document.getElementById('chat-panel-form').style.display = 'flex';
-    if (optimisticMsgs) renderMessages(optimisticMsgs);
-    fetchMessages(convId);
-    if (pollTimer) clearInterval(pollTimer);
-    pollTimer = setInterval(function () { fetchMessages(convId); }, 3000);
-  }
-
-  function fetchMessages(convId) {
-    return supabaseRpc('get_chat_messages', { p_conversation_id: convId, p_visitor_token: getToken() }).then(function (msgs) {
-      msgs = msgs || [];
-      if (isOpen && document.getElementById('chat-panel-messages').style.display !== 'none') {
-        renderMessages(msgs);
-      }
-      if (msgs.length > lastSeenCount) {
-        var newOnes = msgs.slice(lastSeenCount);
-        var hasNewAdminReply = newOnes.some(function (m) { return m.sender_is_admin; });
-        if (hasNewAdminReply && !isOpen) showUnreadDot();
-      }
-      lastSeenCount = msgs.length;
-      return msgs;
-    }).catch(function () { /* transient — next poll will retry */ });
-  }
+  box.addEventListener('submit', function (e) {
+    if (e.target.id === 'chat-handoff-form') { e.preventDefault(); submitHandoff(e.target); }
+  });
 
   document.getElementById('chat-panel-form').addEventListener('submit', function (e) {
     e.preventDefault();
     var input = document.getElementById('chat-panel-input');
     var body = input.value.trim();
-    var convId = localStorage.getItem(CONV_KEY);
-    if (!body || !convId) return;
+    if (!body) return;
     input.value = '';
 
-    var box = document.getElementById('chat-panel-messages');
-    var optimistic = document.createElement('div');
-    optimistic.className = 'chat-panel-row from-visitor';
-    optimistic.innerHTML = '<div class="chat-panel-bubble from-visitor pending">' + escapeHtml(body) + '</div>';
-    box.appendChild(optimistic);
-    box.scrollTop = box.scrollHeight;
+    if (mode === 'bot') { askBot(body); return; }
 
+    var convId = localStorage.getItem(CONV_KEY);
+    if (!convId) return;
+    if (agentClosed) { resetToBot(); askBot(body); return; }
+    box.querySelectorAll('.chat-system.waiting').forEach(function (w) { w.remove(); });
+    box.insertAdjacentHTML('beforeend', visitorRow(body, 'pending'));
+    var optimistic = box.lastElementChild;
+    scrollDown();
     supabaseRpc('send_chat_message', { p_conversation_id: convId, p_visitor_token: getToken(), p_body: body })
       .then(function () { fetchMessages(convId); })
       .catch(function () {
         var b = optimistic.querySelector('.chat-panel-bubble');
         b.classList.add('failed');
-        b.setAttribute('title', 'Not sent — check your connection');
+        b.setAttribute('title', 'Not sent. Check your connection.');
       });
   });
-
-  // Keep checking for admin replies in the background (even while the
-  // panel is closed) so the unread dot lights up like a real chat app.
-  function startBackgroundPolling(convId) {
-    if (backgroundPollTimer) clearInterval(backgroundPollTimer);
-    backgroundPollTimer = setInterval(function () {
-      if (!isOpen) fetchMessages(convId);
-    }, 8000);
-  }
 
   var existingConvId = localStorage.getItem(CONV_KEY);
   if (existingConvId) {
