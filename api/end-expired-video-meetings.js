@@ -1,8 +1,8 @@
 // GET /api/end-expired-video-meetings
-// Called on a schedule by Vercel Cron (see vercel.json) — Vercel signs cron
-// requests with a bearer token in CRON_SECRET, which this checks before
-// doing anything, so the endpoint can't be triggered by anyone else to mess
-// with meeting state.
+// Called every 5 minutes by a pg_cron job in the website's own Supabase
+// project (Vercel's Hobby plan only allows daily cron jobs, too coarse for
+// this). The job sends Authorization: Bearer <CRON_SECRET>, checked below,
+// so nobody else can trigger this to mess with meeting state.
 //
 // Finds every booking whose scheduled consultation window has passed but
 // which never got explicitly ended (patient/doctor just closed the tab),
