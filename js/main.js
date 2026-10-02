@@ -251,7 +251,7 @@ function initBookingModal() {
   var CONSULT_FEE = 300;
   supabaseSelect('store_products', 'select=price_cents&slug=eq.video-consultation&limit=1')
     .then(function (rows) {
-      if (rows && rows[0] && rows[0].price_cents) {
+      if (rows && rows[0] && rows[0].price_cents != null) {
         CONSULT_FEE = rows[0].price_cents / 100;
       }
     })

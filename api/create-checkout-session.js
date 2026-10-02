@@ -17,7 +17,8 @@ const FALLBACK_CONSULT_FEE_CENTS = 30000;
 async function getConsultFeeCents() {
   try {
     const rows = await select('store_products', 'select=price_cents&slug=eq.video-consultation&limit=1');
-    return (rows && rows[0] && rows[0].price_cents) || FALLBACK_CONSULT_FEE_CENTS;
+    const cents = rows && rows[0] && rows[0].price_cents;
+    return cents != null ? cents : FALLBACK_CONSULT_FEE_CENTS;
   } catch (e) {
     return FALLBACK_CONSULT_FEE_CENTS;
   }
