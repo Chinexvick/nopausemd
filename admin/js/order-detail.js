@@ -40,6 +40,17 @@
     return r.items.map(function (i) { return i.product_name + (i.quantity > 1 ? ' ×' + i.quantity : ''); }).join(', ');
   }
 
+  function renderVideoCallSection(r) {
+    if (!r.meeting_status || r.meeting_status === 'not_scheduled') {
+      return '<p style="margin-top:10px; color:var(--text-muted);">No video consultation scheduled for this booking yet.</p>';
+    }
+    if (r.meeting_status === 'ended') {
+      return '<p style="margin-top:10px; color:var(--text-muted);">This video consultation has ended.</p>';
+    }
+    return '<a class="btn btn-primary" style="margin-top:10px;" target="_blank" rel="noopener" ' +
+      'href="video-call.html?booking_id=' + encodeURIComponent(r.id) + '">Join Video Call</a>';
+  }
+
   function escapeHtml(str) {
     return String(str == null ? '' : str).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
@@ -71,7 +82,8 @@
         reason: d.reason, appointment_date: d.appointment_date, appointment_time: d.appointment_time,
         amount_cents: d.amount_cents, paid: d.paid, status: d.status, created_at: d.created_at, paid_at: d.paid_at,
         stripe_payment_intent_id: d.stripe_payment_intent_id, stripe_checkout_session_id: d.stripe_checkout_session_id,
-        viewed_at: d.viewed_at
+        viewed_at: d.viewed_at,
+        meeting_status: d.meeting_status, meeting_scheduled_at: d.meeting_scheduled_at
       };
     } else {
       record = {
@@ -128,6 +140,7 @@
         '<p>Reason: ' + escapeHtml(record.reason || '—') + '</p>' +
         '<p>Date: ' + escapeHtml(record.appointment_date) + ' at ' + escapeHtml(record.appointment_time) + '</p>' +
         '<p>Fee: ' + money(record.amount_cents) + '</p>' +
+        renderVideoCallSection(record) +
         '</div>';
     } else {
       var addr = record.shipping_address || {};

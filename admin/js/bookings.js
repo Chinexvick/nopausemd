@@ -104,6 +104,9 @@
           '<p>Reason: ' + escapeHtml(r.reason || '—') + '</p>' +
           '<p>Date: ' + escapeHtml(r.appointment_date) + ' at ' + escapeHtml(r.appointment_time) + '</p>' +
           '<p>Requested: ' + fmtDate(r.created_at) + '</p>' +
+          (r.meeting_status === 'scheduled' || r.meeting_status === 'active'
+            ? '<a class="btn btn-primary" target="_blank" rel="noopener" style="margin-top:8px; margin-right:8px;" href="video-call.html?booking_id=' + r.id + '">Join Video Call</a>'
+            : '') +
           (r.status !== 'cancelled' ? '<button type="button" class="btn btn-secondary booking-cancel-btn" data-id="' + r.id + '" style="margin-top:8px;">Cancel Booking</button>' : '<span class="badge badge-grey">Cancelled</span>') +
           '</div>' +
         '</div></div>' +

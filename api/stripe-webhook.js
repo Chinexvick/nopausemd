@@ -12,6 +12,90 @@ const { buildBrandedEmailHtml, sendBrandedEmail } = require('./_email');
 module.exports.config = { api: { bodyParser: false } };
 
 const ADMIN_DASHBOARD_URL = 'https://clinipausemd-admin.vercel.app';
+const WEBSITE_URL = 'https://www.clinipausemd.com';
+const CLINIC_TIMEZONE = 'America/New_York';
+const CONSULTATION_MINUTES = 30;
+
+// Converts a wall-clock date + time as understood in the clinic's own time
+// zone (the practice books everyone in Eastern time, regardless of where a
+// visitor's browser clock says they are) into the correct UTC instant.
+function clinicTimeToUtc(dateStr, timeStr) {
+  var match = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec((timeStr || '').trim());
+  if (!dateStr || !match) return null;
+
+  var hour = parseInt(match[1], 10) % 12;
+  if (/pm/i.test(match[3])) hour += 12;
+  var minute = parseInt(match[2], 10);
+
+  var naive = new Date(dateStr + 'T' + String(hour).padStart(2, '0') + ':' + String(minute).padStart(2, '0') + ':00Z');
+  var asClinicTime = new Date(naive.toLocaleString('en-US', { timeZone: CLINIC_TIMEZONE }));
+  var asUtc = new Date(naive.toLocaleString('en-US', { timeZone: 'UTC' }));
+  var offsetMs = asUtc.getTime() - asClinicTime.getTime();
+  return new Date(naive.getTime() + offsetMs);
+}
+
+// Schedules the Twilio Video meeting for a just-confirmed consultation
+// booking and emails the patient their join link. Best-effort: a failure
+// here must never affect the payment record itself, which is already saved
+// by the time this runs.
+async function scheduleVideoConsultation(bookingId) {
+  try {
+    const rows = await select('store_bookings', `id=eq.${encodeURIComponent(bookingId)}&select=full_name,email,reason,appointment_date,appointment_time`);
+    const booking = rows[0];
+    if (!booking) return;
+
+    const scheduledAt = clinicTimeToUtc(booking.appointment_date, booking.appointment_time);
+    if (!scheduledAt) {
+      console.error('stripe-webhook: could not parse appointment date/time for booking', bookingId);
+      return;
+    }
+
+    const roomName = 'booking-' + bookingId;
+    const result = await callRpc('schedule_booking_meeting', {
+      p_booking_id: bookingId,
+      p_room_name: roomName,
+      p_scheduled_at: scheduledAt.toISOString(),
+      p_duration_minutes: CONSULTATION_MINUTES,
+      p_webhook_secret: process.env.STOREFRONT_WEBHOOK_SECRET
+    });
+    const meetingToken = result && (result.meeting_token || (result[0] && result[0].meeting_token));
+    if (!meetingToken) return;
+
+    const joinUrl = `${WEBSITE_URL}/consultation.html?t=${encodeURIComponent(meetingToken)}`;
+    const prettyWhen = scheduledAt.toLocaleString('en-US', {
+      timeZone: CLINIC_TIMEZONE, weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+      hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
+    });
+
+    const html = buildBrandedEmailHtml({
+      eyebrow: 'VIDEO CONSULTATION',
+      heading: 'Your Consultation is Confirmed',
+      bodyHtml: `
+        <p style="margin:0 0 18px; font-size:15px; line-height:1.7; color:#3a3f42;">Hi ${firstName(booking.full_name)},</p>
+        <p style="margin:0 0 18px; font-size:15px; line-height:1.7; color:#3a3f42;">Your video consultation with Dr. Ivanah Thomas is confirmed for:</p>
+        <p style="margin:0 0 18px; font-size:15px; line-height:1.7; color:#121212; font-weight:600;">${prettyWhen}</p>
+        <p style="margin:0 0 18px; font-size:15px; line-height:1.7; color:#3a3f42;"><strong>What we'll cover:</strong> ${booking.reason ? booking.reason.replace(/</g, '&lt;') : 'General wellness consultation'}</p>
+        <p style="margin:0 0 18px; font-size:15px; line-height:1.7; color:#3a3f42;">Use the button below to join at your scheduled time — the link becomes active 10 minutes before your appointment and closes automatically when your ${CONSULTATION_MINUTES}-minute session ends.</p>
+      `,
+      ctaLabel: 'View My Consultation Link',
+      ctaUrl: joinUrl
+    });
+
+    await sendBrandedEmail({
+      to: booking.email,
+      subject: 'Your Video Consultation is Confirmed — ' + prettyWhen,
+      html,
+      text: `Your consultation with Dr. Ivanah Thomas is confirmed for ${prettyWhen}. Join at: ${joinUrl}`
+    });
+
+    await callRpc('mark_booking_invite_sent', {
+      p_booking_id: bookingId,
+      p_webhook_secret: process.env.STOREFRONT_WEBHOOK_SECRET
+    });
+  } catch (err) {
+    console.error('stripe-webhook: scheduleVideoConsultation failed', err.message);
+  }
+}
 
 function firstName(fullName) {
   var trimmed = (fullName || '').trim();
@@ -143,6 +227,8 @@ module.exports = async (req, res) => {
           summary: 'Consultation booking',
           amountCents: session.amount_total
         });
+
+        await scheduleVideoConsultation(metadata.record_id);
       } else if (metadata.kind === 'order' && metadata.record_id) {
         // Back-compat for any in-flight sessions created before this deploy.
         await callRpc('confirm_store_payment', {

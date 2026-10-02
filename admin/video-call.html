@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en" class="auth-pending">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Video Consultation · CliniPauseMD Admin</title>
+<link rel="stylesheet" href="css/style.css" />
+<style>
+  body { background: #0c211b; }
+  .call-wrap { max-width: 900px; margin: 0 auto; padding: 24px 16px 60px; }
+  .call-topline { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .call-topline a { color: #cfe8bd; font-size: 13px; text-decoration: none; }
+  .call-card { background: #fff; border-radius: 20px; padding: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.25); }
+  .video-grid { position: relative; background: #000; border-radius: 16px; overflow: hidden; aspect-ratio: 16 / 9; }
+  #remote-media { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: #000; }
+  #remote-media video { width: 100%; height: 100%; object-fit: cover; }
+  #local-media { position: absolute; bottom: 12px; right: 12px; width: 110px; height: 80px; border-radius: 10px; overflow: hidden; border: 2px solid #fff; }
+  #local-media video { width: 100%; height: 100%; object-fit: cover; }
+  .call-controls { display: flex; gap: 12px; justify-content: center; margin-top: 18px; }
+  .call-btn { width: 52px; height: 52px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; background: #2a2f33; color: #fff; }
+  .call-btn.off { background: #a12626; }
+  .call-btn.hangup { background: #a12626; }
+  .call-countdown { text-align: center; color: var(--text-muted); font-size: 13px; margin-top: 10px; }
+  .call-error { background: var(--red-bg, #fdeaea); color: #a12626; font-size: 14px; padding: 12px 16px; border-radius: 10px; }
+  .call-join { text-align: center; padding: 40px 10px; }
+</style>
+</head>
+<body>
+
+<div class="call-wrap">
+  <div class="call-topline">
+    <a href="#" id="back-link">&larr; Back to booking</a>
+  </div>
+
+  <div class="call-card" id="call-card">
+    <div class="call-join" id="join-state">
+      <p>Connecting you to your patient's video consultation…</p>
+    </div>
+
+    <div id="in-call" style="display:none;">
+      <div class="video-grid">
+        <div id="remote-media"></div>
+        <div id="local-media"></div>
+      </div>
+      <div class="call-controls">
+        <button type="button" class="call-btn" id="toggle-mic" title="Mute/unmute">🎤</button>
+        <button type="button" class="call-btn" id="toggle-cam" title="Camera on/off">📷</button>
+        <button type="button" class="call-btn hangup" id="hangup" title="Leave call">⏻</button>
+      </div>
+      <p class="call-countdown" id="call-countdown"></p>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/nopause-backend.js"></script>
+<script src="js/auth-guard.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/twilio-video@2/dist/twilio-video.min.js"></script>
+<script>
+(function () {
+  var params = new URLSearchParams(location.search);
+  var bookingId = params.get('booking_id');
+  var joinState = document.getElementById('join-state');
+  var inCall = document.getElementById('in-call');
+  var countdownEl = document.getElementById('call-countdown');
+  var room = null;
+  var endsAtTimer = null;
+
+  document.getElementById('back-link').href = 'order-detail.html?id=' + encodeURIComponent(bookingId || '') + '&type=booking';
+
+  function escapeHtml(str) {
+    return String(str == null ? '' : str).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function renderError(message) {
+    joinState.innerHTML = '<p class="call-error">' + escapeHtml(message) + '</p>';
+  }
+
+  function startCall() {
+    if (!bookingId) { renderError('No booking specified.'); return; }
+
+    sb.auth.getSession().then(function (res) {
+      var token = res.data && res.data.session && res.data.session.access_token;
+      if (!token) throw new Error('Not signed in');
+
+      return fetch('/api/admin-video-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        body: JSON.stringify({ booking_id: bookingId })
+      });
+    }).then(function (res) {
+      return res.json().then(function (body) { return { ok: res.ok, body: body }; });
+    }).then(function (result) {
+      if (!result.ok) { renderError(result.body.error || 'Could not start the call.'); return; }
+      connectToRoom(result.body);
+    }).catch(function (err) {
+      renderError(err.message || 'Could not start the call.');
+    });
+  }
+
+  function connectToRoom(info) {
+    Twilio.Video.connect(info.accessToken, { name: info.roomName, audio: true, video: { width: 640 } }).then(function (connectedRoom) {
+      room = connectedRoom;
+      joinState.style.display = 'none';
+      inCall.style.display = 'block';
+
+      attachLocalTrack(room);
+      room.participants.forEach(attachParticipant);
+      room.on('participantConnected', attachParticipant);
+      room.on('participantDisconnected', function () { document.getElementById('remote-media').innerHTML = ''; });
+      room.on('disconnected', function () {
+        inCall.style.display = 'none';
+        joinState.style.display = 'block';
+        if (endsAtTimer) clearInterval(endsAtTimer);
+        renderError('You have left the call.');
+      });
+
+      startCountdown(info.endsAt);
+    }).catch(function (err) {
+      renderError('Could not connect: ' + (err && err.message ? err.message : 'unknown error'));
+    });
+  }
+
+  function attachLocalTrack(connectedRoom) {
+    var container = document.getElementById('local-media');
+    connectedRoom.localParticipant.tracks.forEach(function (pub) {
+      if (pub.track) container.appendChild(pub.track.attach());
+    });
+  }
+
+  function attachParticipant(participant) {
+    var container = document.getElementById('remote-media');
+    participant.tracks.forEach(function (pub) {
+      if (pub.isSubscribed && pub.track) container.appendChild(pub.track.attach());
+    });
+    participant.on('trackSubscribed', function (track) { container.appendChild(track.attach()); });
+  }
+
+  function startCountdown(endsAtIso) {
+    var endsAt = new Date(endsAtIso).getTime();
+    function tick() {
+      var remainingMs = endsAt - Date.now();
+      if (remainingMs <= 0) { countdownEl.textContent = 'Session time has ended.'; if (room) room.disconnect(); return; }
+      var mins = Math.floor(remainingMs / 60000);
+      var secs = Math.floor((remainingMs % 60000) / 1000);
+      countdownEl.textContent = 'Time remaining: ' + mins + ':' + String(secs).padStart(2, '0');
+    }
+    tick();
+    endsAtTimer = setInterval(tick, 1000);
+  }
+
+  document.getElementById('toggle-mic').addEventListener('click', function (e) {
+    if (!room) return;
+    room.localParticipant.audioTracks.forEach(function (pub) {
+      if (pub.track.isEnabled) { pub.track.disable(); e.currentTarget.classList.add('off'); }
+      else { pub.track.enable(); e.currentTarget.classList.remove('off'); }
+    });
+  });
+  document.getElementById('toggle-cam').addEventListener('click', function (e) {
+    if (!room) return;
+    room.localParticipant.videoTracks.forEach(function (pub) {
+      if (pub.track.isEnabled) { pub.track.disable(); e.currentTarget.classList.add('off'); }
+      else { pub.track.enable(); e.currentTarget.classList.remove('off'); }
+    });
+  });
+  document.getElementById('hangup').addEventListener('click', function () {
+    if (room) room.disconnect();
+  });
+
+  function whenReady(cb) {
+    if (window.CURRENT_ADMIN) { cb(); return; }
+    var tries = 0;
+    var iv = setInterval(function () {
+      tries += 1;
+      if (window.CURRENT_ADMIN) { clearInterval(iv); cb(); }
+      else if (tries > 100) { clearInterval(iv); }
+    }, 50);
+  }
+
+  whenReady(startCall);
+})();
+</script>
+</body>
+</html>
