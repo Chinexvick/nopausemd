@@ -137,7 +137,7 @@
 
   function revealDashboard(admin) {
     document.querySelectorAll('.footer-meta .name, .user-badge .u-name').forEach(function (el) {
-      el.textContent = admin.email;
+      el.textContent = admin.name || admin.email;
     });
     document.querySelectorAll('.footer-meta .role, .user-badge .u-role').forEach(function (el) {
       el.textContent = admin.isSuperAdmin ? 'Super Admin' : (admin.roles[0] || 'Staff');

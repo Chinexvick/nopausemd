@@ -1148,3 +1148,25 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 .t-link { color: inherit; text-decoration: none; } .t-link:hover .t-title { color: var(--green); }
 @media (max-width: 1200px) { .ov-attn { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 640px) { .ov-attn { grid-template-columns: repeat(2, 1fr); } }
+.badge-gray { background: #eef0f2; color: #5b6676; }
+
+/* Clinician schedule */
+.cs-layout { display: grid; grid-template-columns: 1fr 320px; gap: 16px; align-items: start; }
+.cs-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.cs-nav { display: flex; gap: 6px; } .cs-nav .btn { padding: 6px 12px; }
+.cs-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--text-muted); margin: 8px 0 12px; }
+.cs-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+.cs-legend i.web, .cs-ev.web { background: var(--green-bg); border-color: var(--green); }
+.cs-legend i.app, .cs-ev.app { background: #e3eefc; border-color: #1f5fbf; }
+.cs-legend i.req, .cs-ev.req { background: #fdf3d6; border-color: #c99a14; border-style: dashed; }
+.cs-week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; }
+.cs-day { background: #fafaf8; border-radius: 10px; padding: 8px; min-height: 160px; }
+.cs-day.today { background: #f0f7ee; outline: 2px solid var(--green); }
+.cs-day h4 { margin: 0 0 6px; font-size: 12px; color: var(--text-muted); font-weight: 600; }
+.cs-day.today h4 { color: var(--green); }
+.cs-ev { display: block; border-left: 3px solid; border-radius: 6px; padding: 5px 7px; margin-bottom: 6px; font-size: 11.5px; line-height: 1.35; text-decoration: none; color: var(--text-dark); }
+.cs-ev b { display: block; font-size: 11px; }
+.cs-ev.urgent { box-shadow: inset 0 0 0 1px #e08a8a; }
+.cs-up { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; } .cs-up:last-child { border-bottom: none; }
+.cs-up small { display: block; color: var(--text-muted); }
+@media (max-width: 1100px) { .cs-layout { grid-template-columns: 1fr; } .cs-week { grid-template-columns: 1fr; } .cs-day { min-height: 0; } }

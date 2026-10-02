@@ -95,8 +95,19 @@ window.NOPAUSE_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3M
     });
   }
 
+  // Read-only reporting functions in the app database. Each one checks the
+  // caller's staff role server-side, so they return nothing to members.
+  function rpc(name, args) {
+    if (!isConfigured()) return Promise.reject(new Error('App backend not configured'));
+    return window.nopauseSb.rpc(name, args || {}).then(function (r) {
+      if (r.error) throw new Error(r.error.message || 'Request failed');
+      return r.data;
+    });
+  }
+
   window.NopauseBackend = {
     isConfigured: isConfigured,
+    rpc: rpc,
     getSession: getSession,
     signIn: signIn,
     signOut: signOut,

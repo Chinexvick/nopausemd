@@ -29,3 +29,14 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 });
+
+// Top search bar on pages that don't have their own search: Enter looks the
+// term up across members and website customers on the Users page.
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.topbar .search-input:not([id])').forEach(function (input) {
+    input.placeholder = 'Search members and customers…';
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && input.value.trim()) location.href = 'users.html?q=' + encodeURIComponent(input.value.trim());
+    });
+  });
+});
