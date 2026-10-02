@@ -245,7 +245,18 @@ function initBookingModal() {
   var triggers = document.querySelectorAll('[data-book-open]');
   if (!triggers.length) return;
 
+  // Fallback only — the real, current price is fetched from store_products
+  // (slug "video-consultation") below, so Dr. Ivanah can change it from the
+  // admin dashboard's Products page without a code change or redeploy.
   var CONSULT_FEE = 300;
+  supabaseSelect('store_products', 'select=price_cents&slug=eq.video-consultation&limit=1')
+    .then(function (rows) {
+      if (rows && rows[0] && rows[0].price_cents) {
+        CONSULT_FEE = rows[0].price_cents / 100;
+      }
+    })
+    .catch(function () { /* keep the fallback */ });
+
   var TIME_SLOTS = ['9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
     '1:00 PM', '1:30 PM', '2:00 PM', '2:30 PM', '3:00 PM', '3:30 PM', '4:00 PM'];
 
@@ -475,14 +486,14 @@ function initBookingModal() {
     panels.innerHTML =
       '<p class="booking-eyebrow">Step 3 of 3</p>' +
       '<h3 class="booking-title">Confirm &amp; Pay</h3>' +
-      '<p class="booking-sub">A $300 consultation fee secures your appointment. Your visit is only confirmed once payment is received.</p>' +
+      '<p class="booking-sub">A $' + CONSULT_FEE.toFixed(2) + ' consultation fee secures your appointment. Your visit is only confirmed once payment is received.</p>' +
       '<div class="booking-summary">' +
         '<strong>' + d.name + '</strong><br>' +
         d.reason + '<br>' +
         prettyDate + ' at ' + state.time + '<br>' +
         d.email + ' &middot; ' + d.phone +
       '</div>' +
-      '<div class="booking-amount"><span>Consultation fee</span><span>$' + CONSULT_FEE + '.00</span></div>' +
+      '<div class="booking-amount"><span>Consultation fee</span><span>$' + CONSULT_FEE.toFixed(2) + '</span></div>' +
       '<p class="booking-error" id="booking-error-3">Something went wrong starting checkout. Please try again.</p>' +
       '<div class="booking-actions">' +
         '<button type="button" class="booking-back" id="step3-back">&larr; Back</button>' +
@@ -598,7 +609,10 @@ function loadProducts(selectorId, limit) {
 
   grid.innerHTML = skeletonProductCards(limit || 3);
 
-  var query = 'select=id,name,description,price_cents,image_url,category&active=eq.true&order=sort_order.asc';
+  // video-consultation is a store_products row too (so its price is editable
+  // from the admin Products page), but it's booked through the dedicated
+  // consultation flow, not bought off the shop grid — excluded by slug here.
+  var query = 'select=id,name,description,price_cents,image_url,category&active=eq.true&slug=neq.video-consultation&order=sort_order.asc';
   if (limit) query += '&limit=' + encodeURIComponent(limit);
 
   function showRetryState(offline) {

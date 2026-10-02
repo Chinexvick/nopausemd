@@ -14,6 +14,10 @@ const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 
 const { isConfigured, buildVideoAccessToken, findOrCreateRoom } = require('./_twilio');
 
+// Also pulls the admin's own store_admins row (RLS lets anyone read their
+// own row) so we can record their first name against the booking they
+// attend — staff-attribution tracking the super admin asked for, so she can
+// see which team member handled which consultation.
 async function getAdminIdentity(accessToken) {
   if (!accessToken) return null;
 
@@ -34,7 +38,19 @@ async function getAdminIdentity(accessToken) {
 
   if (!userRes.ok) return null;
   const user = await userRes.json().catch(() => null);
-  return user && user.email ? user.email : 'Clinician';
+  if (!user || !user.email) return null;
+
+  let fullName = null;
+  try {
+    const selfRes = await fetch(`${SUPABASE_URL}/rest/v1/store_admins?id=eq.${encodeURIComponent(user.id)}&select=full_name`, {
+      headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${accessToken}` }
+    });
+    const selfRows = await selfRes.json().catch(() => []);
+    fullName = selfRes.ok && selfRows[0] ? selfRows[0].full_name : null;
+  } catch (e) { /* fall back to email below */ }
+
+  const firstName = (fullName || user.email.split('@')[0]).trim().split(/\s+/)[0];
+  return { email: user.email, firstName };
 }
 
 module.exports = async (req, res) => {
@@ -59,8 +75,8 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const adminEmail = await getAdminIdentity(callerToken);
-    if (!adminEmail) {
+    const admin = await getAdminIdentity(callerToken);
+    if (!admin) {
       res.status(403).json({ error: 'Admin access required' });
       return;
     }
@@ -89,10 +105,23 @@ module.exports = async (req, res) => {
     const windowEnd = scheduledAt.getTime() + (booking.meeting_duration_minutes || 30) * 60 * 1000;
 
     const videoToken = buildVideoAccessToken({
-      identity: 'Dr. ' + adminEmail.split('@')[0],
+      identity: 'Dr. ' + admin.firstName,
       roomName: booking.meeting_room_name,
       ttlSeconds: Math.max(60, Math.ceil((windowEnd - Date.now()) / 1000) + 600)
     });
+
+    // Best-effort — awaited so it completes before this serverless function
+    // exits, but a failure here never blocks the call itself from starting.
+    await fetch(`${SUPABASE_URL}/rest/v1/store_bookings?id=eq.${encodeURIComponent(bookingId)}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${callerToken}`,
+        Prefer: 'return=minimal'
+      },
+      body: JSON.stringify({ attended_by_name: admin.firstName, attended_by_email: admin.email, attended_at: new Date().toISOString() })
+    }).catch(function (err) { console.error('admin-video-token: failed to record attendance', err.message); });
 
     res.status(200).json({
       accessToken: videoToken,

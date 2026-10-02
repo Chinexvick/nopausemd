@@ -757,6 +757,6 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 
   .search-input-wrap { width: 200px; }
   .page-title { font-size: 26px; }
-  .page-content { padding: 16px; }
+  .page-content { padding: 18px 20px; }
   .topbar-actions { gap: 8px; }
 }

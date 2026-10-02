@@ -83,7 +83,8 @@
         amount_cents: d.amount_cents, paid: d.paid, status: d.status, created_at: d.created_at, paid_at: d.paid_at,
         stripe_payment_intent_id: d.stripe_payment_intent_id, stripe_checkout_session_id: d.stripe_checkout_session_id,
         viewed_at: d.viewed_at,
-        meeting_status: d.meeting_status, meeting_scheduled_at: d.meeting_scheduled_at
+        meeting_status: d.meeting_status, meeting_scheduled_at: d.meeting_scheduled_at,
+        attended_by_name: d.attended_by_name
       };
     } else {
       record = {
@@ -140,6 +141,7 @@
         '<p>Reason: ' + escapeHtml(record.reason || '—') + '</p>' +
         '<p>Date: ' + escapeHtml(record.appointment_date) + ' at ' + escapeHtml(record.appointment_time) + '</p>' +
         '<p>Fee: ' + money(record.amount_cents) + '</p>' +
+        (record.attended_by_name ? '<p>Attended by: <strong>' + escapeHtml(record.attended_by_name) + '</strong></p>' : '') +
         renderVideoCallSection(record) +
         '</div>';
     } else {

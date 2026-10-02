@@ -2,16 +2,26 @@
 // Body: { kind: 'booking' | 'order', site: 'clinipausemd' | 'drivanah', ...fields }
 //
 // This is the only place a booking/order row gets created, and the only
-// place that talks to Stripe. Amounts always come from the database
-// (fixed $300 consultation fee, or product prices looked up server-side
-// inside create_store_order) — never from the client — so nobody can pay
-// a different amount than what they're actually being charged.
+// place that talks to Stripe. Amounts always come from the database — the
+// consultation fee is looked up from store_products (slug
+// "video-consultation"), same as every other product price — never from the
+// client, so nobody can pay a different amount than what they're actually
+// being charged.
 
 const Stripe = require('stripe');
 const { callRpc, select } = require('./_supabase');
 
 const ALLOWED_SITES = ['clinipausemd', 'drivanah'];
-const CONSULT_FEE_CENTS = 30000;
+const FALLBACK_CONSULT_FEE_CENTS = 30000;
+
+async function getConsultFeeCents() {
+  try {
+    const rows = await select('store_products', 'select=price_cents&slug=eq.video-consultation&limit=1');
+    return (rows && rows[0] && rows[0].price_cents) || FALLBACK_CONSULT_FEE_CENTS;
+  } catch (e) {
+    return FALLBACK_CONSULT_FEE_CENTS;
+  }
+}
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -62,7 +72,7 @@ module.exports = async (req, res) => {
         line_items: [{
           price_data: {
             currency: 'usd',
-            unit_amount: CONSULT_FEE_CENTS,
+            unit_amount: await getConsultFeeCents(),
             product_data: { name: 'CliniPause Consultation', description: `${b.date} at ${b.time}` }
           },
           quantity: 1

@@ -89,7 +89,7 @@
           '<div><div class="order-cell-label">Phone</div><div class="order-sub">' + escapeHtml(r.phone || '—') + '</div></div>' +
           '<div><div class="order-cell-label">Appointment</div><div class="order-sub">' + escapeHtml(r.appointment_date) + ' · ' + escapeHtml(r.appointment_time) + '</div></div>' +
           '<div><div class="order-cell-label">Fee</div><div class="order-sub">' + money(r.amount_cents) + '</div></div>' +
-          '<div><div class="order-cell-label">Status</div>' + statusBadge(r) + '</div>' +
+          '<div><div class="order-cell-label">Status</div>' + statusBadge(r) + (r.attended_by_name ? '<div class="order-sub">Attended by ' + escapeHtml(r.attended_by_name) + '</div>' : '') + '</div>' +
           '<svg class="order-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>' +
         '</div>' +
         '<div class="order-row-detail"><div class="order-detail-grid">' +
@@ -104,6 +104,7 @@
           '<p>Reason: ' + escapeHtml(r.reason || '—') + '</p>' +
           '<p>Date: ' + escapeHtml(r.appointment_date) + ' at ' + escapeHtml(r.appointment_time) + '</p>' +
           '<p>Requested: ' + fmtDate(r.created_at) + '</p>' +
+          (r.attended_by_name ? '<p>Attended by: <strong>' + escapeHtml(r.attended_by_name) + '</strong></p>' : '') +
           (r.meeting_status === 'scheduled' || r.meeting_status === 'active'
             ? '<a class="btn btn-primary" target="_blank" rel="noopener" style="margin-top:8px; margin-right:8px;" href="video-call.html?booking_id=' + r.id + '">Join Video Call</a>'
             : '') +
