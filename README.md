@@ -55,8 +55,11 @@ Each paid booking gets its own private video room. The patient's link is a long 
 
 The mobile app has its own separate video calling. This website flow is independent of it.
 
+### Chat assistant
+The chat bubble opens an assistant that answers common questions straight away (consultation prices, booking, hours, services, programs, order tracking, video links), using the same information that's on the site. Prices come live from the catalogue. If someone mentions an emergency it points them to 911 or 988. A **Talk to a real person** button is always there: the visitor leaves their name and email, and the conversation lands in the dashboard with the full transcript and a short summary.
+
 ### Other website features
-Contact form, newsletter sign-up with a welcome email, speaking engagement requests, and live chat with the care team. Each of these lands in the dashboard.
+Contact form, newsletter sign-up with a welcome email, and speaking engagement requests, all of which land in the dashboard. An announcement bar and switches for booking, shop checkout and chat are controlled from the dashboard without a code change. Every newsletter email has a personal unsubscribe link.
 
 ---
 
@@ -86,8 +89,26 @@ Whenever a staff member joins a call, their name is recorded on that session. St
 - **Products:** a clean table of everything in the catalogue. Clicking a product opens its own edit page (name, price, category, description, image, visible or hidden). Consultation prices are edited here too.
 - **Orders:** every paid order with its items, customer and shipping details. The team updates the fulfilment status, carrier and tracking number, which the customer then sees on the Track Order page.
 
+### Overview
+One live page for the whole team: what needs attention (chats waiting, orders to ship, new messages, app consultations, safety escalations), 30-day sales, today's consultations with a Join button, and a feed of what each staff member did. Super admins also see a 30-day team performance table.
+
+### Live chat inbox
+Chats are sorted into Waiting, Open, Mine and Closed. Every reply is stamped with the staff member's name, the first person to reply owns the chat, and closing a chat requires a short summary that's saved under the closer's name.
+
+### Orders
+A fulfilment queue with filters, search and CSV export. Each order opens a side panel with the items, address, Stripe payment details and a timeline of every change and who made it. Updating the status or tracking number can email the customer automatically.
+
+### Users
+App members and website customers in one place, with sign-up, activity and safety signals, and a top search bar that works from any page.
+
+### App tools
+Treatments, Supplements and Hormones show the clinical library the app uses, with evidence level and review status. The AI review queue lets clinicians check what the AI coach told members and sign off on it. Assessments, Safety, Subscriptions, the clinician schedule and Privacy & Compliance all show live figures from the app. These read through reporting functions that check the user is staff and return only what the screen needs.
+
+### System
+Uptime for the website, dashboard, app server and database is checked every 5 minutes. A weekly summary email goes out every Monday morning, newsletter broadcasts are sent from Notifications, and website settings live under Admin Settings.
+
 ### Other sections
-Live chat, contact messages, speaking engagements, notifications, super-admin revenue and team management, plus the clinical and content tools connected to the NoPauseMD app (clinicians, consultations, assessments, content and safety rules).
+Contact messages, speaking engagements, super-admin revenue (split by shop, consultations and app subscriptions), team management and audit logs.
 
 ---
 
@@ -106,10 +127,12 @@ Live chat, contact messages, speaking engagements, notifications, super-admin re
 
 ## Scheduled jobs
 
-Two small jobs run from the database on a timer. They only contact the website when there's actually something to do:
+A few small jobs run from the database on a timer. The reminder and cleanup jobs only contact the website when there's actually something to do:
 
 - **Reminders:** sends the 20-minute reminders.
 - **Session cleanup:** closes any video room whose booked time has passed.
+- **Uptime checks:** every 5 minutes.
+- **Weekly summary:** Monday mornings, unless switched off in the dashboard.
 
 ---
 
