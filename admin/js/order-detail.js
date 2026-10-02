@@ -195,7 +195,7 @@
       var token = sessionRes.data && sessionRes.data.session && sessionRes.data.session.access_token;
       if (!token) throw new Error('Not signed in');
 
-      var res = await fetch('/api/admin-order-stripe-details?payment_intent_id=' + encodeURIComponent(paymentIntentId), {
+      var res = await fetch('https://www.clinipausemd.com/api/admin-order-stripe-details?payment_intent_id=' + encodeURIComponent(paymentIntentId), {
         headers: { Authorization: 'Bearer ' + token }
       });
       var data = await res.json();

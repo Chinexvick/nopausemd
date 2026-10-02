@@ -17,6 +17,20 @@ const Stripe = require('stripe');
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 
+// Called cross-origin from the admin dashboard (a separate project); only
+// the dashboard's own origin is allowed. Auth is still checked below.
+const ALLOWED_ORIGIN = /^https:\/\/clinipausemd-admin(-[a-z0-9-]+)?\.vercel\.app$/;
+function applyCors(req, res) {
+  const origin = req.headers.origin || '';
+  if (ALLOWED_ORIGIN.test(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Authorization');
+    res.setHeader('Access-Control-Max-Age', '600');
+  }
+}
+
 async function isRequestFromSuperAdmin(accessToken) {
   if (!accessToken) return false;
 
@@ -116,6 +130,11 @@ function aggregateCharges(charges) {
 }
 
 module.exports = async (req, res) => {
+  applyCors(req, res);
+  if (req.method === 'OPTIONS') {
+    res.status(204).end();
+    return;
+  }
   if (req.method !== 'GET') {
     res.status(405).json({ error: 'Method not allowed' });
     return;

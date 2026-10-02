@@ -23,7 +23,7 @@
     var session = (await window.sb.auth.getSession()).data.session;
     if (!session) return;
 
-    var res = await fetch('/api/admin-stripe-revenue', {
+    var res = await fetch('https://www.clinipausemd.com/api/admin-stripe-revenue', {
       headers: { Authorization: 'Bearer ' + session.access_token }
     });
 
