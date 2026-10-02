@@ -1,10 +1,9 @@
-// MIRROR of api/_email.js at the repo root.
-// The admin dashboard and the public website are two separate Vercel
-// projects built from this one repo, each with its own Root Directory
-// (repo root vs admin/), so a function living only under the root api/
-// folder is never deployed to clinipausemd-admin.vercel.app — it 404s
-// there. This copy is what the admin dashboard actually calls. Keep the
-// two files in sync; they're identical on purpose.
+// MIRROR of api/_email.js at the repo root — keep the two identical.
+// The website and the admin dashboard are separate Vercel projects built
+// from this repo (root vs admin/ as Root Directory), so each needs its own
+// copy of shared helpers. Admin-only endpoints live only here in admin/api;
+// website endpoints live only in the root api/ (the Hobby plan allows at
+// most 12 functions per project).
 
 // Shared branded HTML email helper — used by every transactional email this
 // API layer sends (newsletter welcome, admin order/booking notifications,

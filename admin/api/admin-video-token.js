@@ -1,11 +1,3 @@
-// MIRROR of api/admin-video-token.js at the repo root.
-// The admin dashboard and the public website are two separate Vercel
-// projects built from this one repo, each with its own Root Directory
-// (repo root vs admin/), so a function living only under the root api/
-// folder is never deployed to clinipausemd-admin.vercel.app — it 404s
-// there. This copy is what the admin dashboard actually calls. Keep the
-// two files in sync; they're identical on purpose.
-
 // POST /api/admin-video-token
 // Header: Authorization: Bearer <website Supabase access token>
 // Body: { booking_id }
