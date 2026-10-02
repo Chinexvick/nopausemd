@@ -92,6 +92,12 @@ Whenever a staff member joins a call, their name is recorded on that session. St
 ### Overview
 One live page for the whole team: what needs attention (chats waiting, orders to ship, new messages, app consultations, safety escalations), 30-day sales, today's consultations with a Join button, and a feed of what each staff member did. Super admins also see a 30-day team performance table.
 
+### App consultations (the clinical core)
+Members ask for a clinician in the NoPauseMD app. The request appears in **Consultations** with urgent ones first, and everyone with a clinical role is alerted instantly, even on another page, with a sound and a desktop notification if allowed. The care lead assigns each request to a clinician; that clinician is notified and is the only person who can reply to the member, confirm or schedule it, take the video call, or mark it complete. The care lead can reassign or return a request to the queue at any time. Each consultation shows the member's reason, safety flags, attachments, the AI chat if the member chose to share it, and a **health brief** built only from what the member shares. Video visits open right inside the dashboard, run by the app's own video service, and the member is told the moment the clinician joins. Every view and action is recorded in the audit trail under the staff member's name.
+
+### Roles
+Menus and pages follow what each role is allowed to do. Administrators and clinical leads see everything clinical and business; a treating clinician sees only their own consultations and nothing from the website's orders, chats or customers.
+
 ### Live chat inbox
 Chats are sorted into Waiting, Open, Mine and Closed. Every reply is stamped with the staff member's name, the first person to reply owns the chat, and closing a chat requires a short summary that's saved under the closer's name.
 
