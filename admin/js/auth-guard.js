@@ -32,6 +32,62 @@
     return;
   }
 
+  // What each page needs, using the permission names the admin API returns
+  // from GET /v1/me. Menu items a person can't use are removed from the page,
+  // and opening one directly sends them to their own landing page.
+  var PAGE_PERMISSION = {
+    'overview.html': 'dashboard.read',
+    'users.html': 'members.read',
+    'consultations.html': 'consultations.work',
+    'clinician-schedule.html': 'consultations.work',
+    'content-bulk-actions.html': 'content.read',
+    'evidence-library.html': 'content.read',
+    'treatments.html': 'content.read',
+    'supplement-library.html': 'content.read',
+    'hormone-center.html': 'content.read',
+    'ai-dashboard.html': 'escalations.review',
+    'ai-review-queue.html': 'escalations.review',
+    'safety-rules.html': 'escalations.review',
+    'safety-events.html': 'escalations.review',
+    'assessments.html': 'assessment.manage',
+    'subscriptions.html': 'subscriptions.read',
+    'analytics.html': 'dashboard.read',
+    'reports.html': 'exports.create',
+    'orders.html': 'dashboard.read',
+    'order-detail.html': 'dashboard.read',
+    'products.html': 'dashboard.read',
+    'product-edit.html': 'dashboard.read',
+    'live-chat.html': 'dashboard.read',
+    'contact-messages.html': 'dashboard.read',
+    'bookings.html': 'dashboard.read',
+    'video-call.html': 'dashboard.read',
+    'speaking-engagements.html': 'dashboard.read',
+    'privacy-compliance.html': 'audit.read',
+    'audit-log.html': 'audit.read',
+    'system-health.html': 'dashboard.read',
+    'admin-settings.html': 'staff.manage'
+  };
+
+  function mayOpen(info, page) {
+    if (info.isSuperAdmin) return true;
+    var need = PAGE_PERMISSION[page];
+    return !need || info.permissions.indexOf(need) > -1;
+  }
+
+  function landingFor(info) {
+    return mayOpen(info, 'overview.html') ? 'overview.html' : 'consultations.html';
+  }
+
+  function trimMenu(info) {
+    document.querySelectorAll('.sidebar .nav-item').forEach(function (a) {
+      var page = (a.getAttribute('href') || '').split('?')[0];
+      if (page && !mayOpen(info, page)) a.remove();
+    });
+    document.querySelectorAll('.sidebar .nav-group').forEach(function (g) {
+      if (!g.querySelector('.nav-item')) g.remove();
+    });
+  }
+
   // Always remove the Super Admin nav group from the DOM up front, before
   // anything else runs — it only gets put back (never re-inserted; it just
   // never gets removed) once /v1/me confirms isSuperAdmin below. This way a
@@ -54,12 +110,17 @@
       }
 
       var adminInfo = {
+        userId: me.userId,
         email: me.email,
         name: me.fullName || me.name || me.displayName || null,
         roles: me.roles || [],
         permissions: me.permissions || [],
         isSuperAdmin: !!me.isSuperAdmin
       };
+
+      var thisPage = location.pathname.split('/').pop() || 'overview.html';
+      if (!mayOpen(adminInfo, thisPage)) { location.replace(landingFor(adminInfo)); return; }
+      trimMenu(adminInfo);
 
       if (adminInfo.isSuperAdmin && superNavPlaceholder.parentNode) {
         superNavPlaceholder.parentNode.replaceChild(superNavGroup, superNavPlaceholder);
@@ -75,7 +136,8 @@
       // existing — if it were set earlier, a page could run a write against
       // `sb` before the bridge attaches a session to it, and that write
       // would silently affect zero rows under RLS instead of failing loudly.
-      var bridged = window.sb ? bridgeWebsiteSession(session.access_token) : Promise.resolve();
+      var wantsWebsite = adminInfo.isSuperAdmin || adminInfo.permissions.indexOf('dashboard.read') > -1;
+      var bridged = (window.sb && wantsWebsite) ? bridgeWebsiteSession(session.access_token) : Promise.resolve();
 
       return bridged.finally(function () {
         window.CURRENT_ADMIN = adminInfo;

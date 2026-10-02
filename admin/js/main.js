@@ -40,3 +40,11 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 });
+
+// Live staff alerts (new consultation requests, assignments, messages) on every page.
+(function () {
+  if (document.querySelector('script[src$="staff-alerts.js"]')) return;
+  var s = document.createElement('script');
+  s.src = 'js/staff-alerts.js';
+  document.head.appendChild(s);
+})();

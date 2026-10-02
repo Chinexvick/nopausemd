@@ -118,6 +118,14 @@ module.exports = async (req, res) => {
     return;
   }
 
+  // The website's orders, customers, chats and bookings are business data.
+  // Treating clinicians only work their own consultations (in the app
+  // backend), so they get no website session at all.
+  if (!me.isSuperAdmin && !(Array.isArray(me.permissions) && me.permissions.indexOf('dashboard.read') > -1)) {
+    res.status(403).json({ error: 'Your role does not include website data' });
+    return;
+  }
+
   try {
     let user = await findUserByEmail(me.email);
     if (!user) user = await createUser(me.email);
