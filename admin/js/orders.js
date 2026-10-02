@@ -280,7 +280,7 @@
     msg.textContent = '';
     try {
       var token = await authToken();
-      var res = await fetch(API + 'admin-order-action', {
+      var res = await fetch(API + 'admin-actions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
         body: JSON.stringify({

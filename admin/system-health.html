@@ -63,7 +63,11 @@
     <tbody id="backend-status-body"><tr><td colspan="4" class="orders-empty">Loading…</td></tr></tbody>
   </table>
 </div>
-<div class="card"><div class="card-title">Uptime, Latency &amp; Incidents</div><div class="orders-empty">Not yet available — the backend doesn't expose monitoring metrics beyond the status above.</div></div>
+<div class="card">
+  <div class="card-title">Uptime, latency &amp; incidents</div>
+  <p class="od-sub" style="margin-top:-4px;">Each service is checked automatically every 5 minutes.</p>
+  <div class="up-grid" id="up-grid"><div class="orders-empty">Loading…</div></div>
+</div>
     </main>
   </div>
 </div>
@@ -73,6 +77,7 @@
 <script src="js/auth-guard.js"></script>
 <script src="js/nav-badges.js"></script>
 <script src="js/system-health.js"></script>
+<script src="js/site-tools.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

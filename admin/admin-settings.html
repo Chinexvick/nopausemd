@@ -76,7 +76,18 @@
   </form>
   <div id="add-staff-result" style="margin-top:10px;font-size:13px;"></div>
 </div>
-<div class="card"><div class="card-title">Platform Configuration</div><div class="orders-empty">Not yet available — general settings, feature toggles and integrations aren't exposed by the backend. See Safety &amp; Rules and AI &amp; Intelligence for the real kill switches.</div></div>
+<div class="card" id="ws-card">
+  <div class="card-title">Website settings</div>
+  <p class="od-sub" style="margin-top:-4px;">Changes apply to clinipausemd.com immediately and are recorded under your name.</p>
+  <div class="ws-row"><div><strong>Online booking</strong><div class="od-sub">When off, booking buttons ask visitors to email or chat instead.</div></div><label class="ws-switch"><input type="checkbox" data-setting="booking_enabled"><span></span></label></div>
+  <div class="ws-row"><div><strong>Shop checkout</strong><div class="od-sub">When off, products stay visible but can't be bought.</div></div><label class="ws-switch"><input type="checkbox" data-setting="shop_enabled"><span></span></label></div>
+  <div class="ws-row"><div><strong>Chat assistant</strong><div class="od-sub">Show the chat bubble on every page.</div></div><label class="ws-switch"><input type="checkbox" data-setting="chat_enabled"><span></span></label></div>
+  <div class="ws-row" style="align-items:flex-start;"><div style="flex:1;"><strong>Announcement bar</strong><div class="od-sub">A short message across the top of every page (holiday hours, offers).</div>
+    <input type="text" id="ws-ann-text" maxlength="240" class="od-search" style="width:100%;margin-top:8px;" placeholder="e.g. Closed Nov 27–28 for Thanksgiving. Bookings reopen Dec 1."></div>
+    <label class="ws-switch"><input type="checkbox" id="ws-ann-on"><span></span></label></div>
+  <div class="od-form-foot"><span class="od-msg" id="ws-msg"></span><button type="button" class="btn btn-primary" id="ws-ann-save">Save announcement</button></div>
+  <p class="od-sub" id="ws-updated"></p>
+</div>
     </main>
   </div>
 </div>
@@ -86,6 +97,7 @@
 <script src="js/auth-guard.js"></script>
 <script src="js/nav-badges.js"></script>
 <script src="js/admin-settings.js"></script>
+<script src="js/site-tools.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

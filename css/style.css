@@ -2083,3 +2083,6 @@ ul { margin: 0; padding: 0; }
 
   .bundle-strip { padding: 24px 20px; }
 }
+
+/* Announcement bar (set from the dashboard) */
+.site-announcement { background: var(--secondary-s300); color: #fff; text-align: center; font-size: 14px; padding: 9px 16px; line-height: 1.4; }

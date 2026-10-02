@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Unsubscribe · CliniPause</title>
+<link rel="icon" href="assets/images/favicon-32.png">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .unsub { max-width: 520px; margin: 80px auto; padding: 40px 28px; background: #fff; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,.08); text-align: center; }
+  .unsub img { width: 56px; margin-bottom: 12px; }
+  .unsub h1 { font-family: var(--font-serif); font-size: 28px; margin: 0 0 10px; }
+  .unsub p { color: var(--neutral-n200); line-height: 1.6; }
+  body { background: #f6f8f6; }
+</style>
+</head>
+<body>
+  <div class="unsub">
+    <img src="assets/images/favicon-32.png" alt="CliniPause">
+    <h1 id="u-title">Unsubscribing…</h1>
+    <p id="u-text">One moment.</p>
+    <p><a class="btn btn-primary" href="/">Back to CliniPause</a></p>
+  </div>
+<script>
+(function () {
+  var URL_ = 'https://ellilwezvzvdftgbpabt.supabase.co';
+  var KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVsbGlsd2V6dnp2ZGZ0Z2JwYWJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY5OTU5MzYsImV4cCI6MjEwMjU3MTkzNn0.jW3q1LsVKkQrETrL-KkeIhbxLgFI0HIao466orETCwk';
+  var t = new URLSearchParams(location.search).get('t') || '';
+  var title = document.getElementById('u-title'), text = document.getElementById('u-text');
+  if (!/^[0-9a-f-]{36}$/i.test(t)) { title.textContent = 'Link not recognised'; text.textContent = 'Please use the unsubscribe link from one of our emails.'; return; }
+  fetch(URL_ + '/rest/v1/rpc/newsletter_unsubscribe', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', apikey: KEY, Authorization: 'Bearer ' + KEY },
+    body: JSON.stringify({ p_token: t })
+  }).then(function (r) { return r.json(); }).then(function (ok) {
+    if (ok === true) { title.textContent = 'You’re unsubscribed'; text.textContent = 'You won’t receive any more newsletters from CliniPause. Order and appointment emails are not affected.'; }
+    else { title.textContent = 'Link not recognised'; text.textContent = 'This unsubscribe link is no longer valid.'; }
+  }).catch(function () { title.textContent = 'Something went wrong'; text.textContent = 'Please try again, or email info@clinipause.com.'; });
+})();
+</script>
+</body>
+</html>

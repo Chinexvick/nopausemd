@@ -63,7 +63,18 @@
           <tbody id="staff-notifications-body"><tr><td colspan="4" class="orders-empty">Loading…</td></tr></tbody>
         </table>
       </div>
-      <div class="card"><div class="card-title">Marketing / Broadcast Notifications</div><div class="orders-empty">Not yet available — this backend only has per-staff notifications (consultation requests and messages), not member broadcast campaigns.</div></div>
+      <div class="card"><div class="card" id="bc-card">
+  <div class="card-title">Newsletter broadcast</div>
+  <p class="od-sub" style="margin-top:-4px;">Send an email to everyone subscribed to the clinipausemd.com newsletter. Every email includes a personal unsubscribe link. <strong id="bc-audience">…</strong></p>
+  <form class="od-form" id="bc-form">
+    <label>Subject<input name="subject" maxlength="200" required placeholder="e.g. New: 1-hour menopause consultations"></label>
+    <label>Message<textarea name="body" rows="8" maxlength="20000" required placeholder="Write your message. Leave a blank line between paragraphs."></textarea></label>
+    <div class="od-form-foot"><span class="od-msg" id="bc-msg"></span>
+      <span style="display:flex;gap:8px;"><button type="button" class="btn btn-secondary" id="bc-test">Send me a test</button><button type="submit" class="btn btn-primary">Send to subscribers</button></span></div>
+  </form>
+</div>
+<div class="card"><div class="card-title">Past broadcasts</div>
+  <table class="ov-board"><thead><tr><th>Sent</th><th>Subject</th><th>By</th><th>Delivered</th></tr></thead><tbody id="bc-history"><tr><td colspan="4" class="orders-empty">Loading…</td></tr></tbody></table></div>
     </main>
   </div>
 </div>
@@ -73,6 +84,7 @@
 <script src="js/auth-guard.js"></script>
 <script src="js/nav-badges.js"></script>
 <script src="js/nopause-notifications.js"></script>
+<script src="js/site-tools.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

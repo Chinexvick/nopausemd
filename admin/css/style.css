@@ -1170,3 +1170,22 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 .cs-up { padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; } .cs-up:last-child { border-bottom: none; }
 .cs-up small { display: block; color: var(--text-muted); }
 @media (max-width: 1100px) { .cs-layout { grid-template-columns: 1fr; } .cs-week { grid-template-columns: 1fr; } .cs-day { min-height: 0; } }
+
+/* Website settings + uptime */
+.ws-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.ws-switch { position: relative; width: 42px; height: 24px; flex-shrink: 0; }
+.ws-switch input { opacity: 0; width: 0; height: 0; }
+.ws-switch span { position: absolute; inset: 0; background: #d5d9e0; border-radius: 999px; cursor: pointer; transition: background .15s; }
+.ws-switch span::before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform .15s; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+.ws-switch input:checked + span { background: var(--green); }
+.ws-switch input:checked + span::before { transform: translateX(18px); }
+.ws-switch input:focus-visible + span { outline: 2px solid var(--green); outline-offset: 2px; }
+.up-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.up-card { border: 1px solid var(--border); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.up-head { display: flex; justify-content: space-between; align-items: center; }
+.up-bars { display: flex; gap: 2px; height: 22px; }
+.up-bars i { flex: 1; border-radius: 2px; background: #cfe3c8; }
+.up-bars i.ok { background: var(--green); opacity: .75; }
+.up-bars i.bad { background: #d94848; }
+.up-stats { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); }
+.up-stats span { display: block; font-size: 15px; font-weight: 700; color: var(--text-dark); }

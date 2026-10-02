@@ -29,6 +29,13 @@ function supabaseSelect(table, query) {
 }
 
 function startCheckout(payload) {
+  var st = window.SITE_SETTINGS || {};
+  if (payload && payload.kind === 'order' && st.shop_enabled === false) {
+    return Promise.reject(new Error('Our shop is temporarily closed for orders. Please check back soon.'));
+  }
+  if (payload && payload.kind === 'booking' && st.booking_enabled === false) {
+    return Promise.reject(new Error('Online booking is paused right now. Please email info@clinipause.com to arrange a consultation.'));
+  }
   return fetch('/api/create-checkout-session', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -86,6 +93,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
+  initSiteSettings();
   initCart();
   initBookingModal();
   initShopProducts();
@@ -104,6 +112,42 @@ document.addEventListener('DOMContentLoaded', function () {
    Hero entrance animation — the first thing a visitor sees
    fades/slides up in a quick stagger the moment the page loads.
    ========================================================= */
+/* =========================================================
+   Site settings the team controls from the dashboard: an
+   announcement bar, and switches that pause online booking,
+   shop checkout or the chat assistant.
+   ========================================================= */
+function initSiteSettings() {
+  supabaseRpc('get_public_site_settings', {}).then(function (st) {
+    st = st || {};
+    window.SITE_SETTINGS = st;
+
+    var ann = st.announcement || {};
+    if (ann.enabled && ann.text) {
+      var bar = document.createElement('div');
+      bar.className = 'site-announcement';
+      bar.setAttribute('role', 'status');
+      bar.textContent = ann.text;
+      document.body.insertBefore(bar, document.body.firstChild);
+    }
+
+    if (st.chat_enabled === false) {
+      ['chat-bubble', 'chat-panel'].forEach(function (id) { var n = document.getElementById(id); if (n) n.remove(); });
+    }
+
+    if (st.booking_enabled === false) {
+      document.addEventListener('click', function (e) {
+        if (!e.target.closest('[data-book-open]')) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        alert('Online booking is paused right now. Please email info@clinipause.com and our team will arrange your consultation.');
+      }, true);
+      var overlay = document.querySelector('.booking-overlay.open');
+      if (overlay) overlay.classList.remove('open');
+    }
+  }).catch(function () { /* settings are optional; the site works with defaults */ });
+}
+
 function initHeroEntrance() {
   var groups = [
     document.querySelectorAll('.home-hero-copy > *'),

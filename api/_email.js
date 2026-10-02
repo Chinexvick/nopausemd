@@ -100,7 +100,7 @@ function createTransporter() {
 // Sends one branded email. `to` may be a single address or an array of
 // addresses (nodemailer accepts either as a comma-joined string).
 // `attachments` are extra nodemailer attachments (e.g. a calendar invite).
-async function sendBrandedEmail({ to, subject, html, text, attachments }) {
+async function sendBrandedEmail({ to, subject, html, text, attachments, headers }) {
   if (!process.env.HOSTINGER_SMTP_USER || !process.env.HOSTINGER_SMTP_PASS) {
     throw new Error('Email is not configured (missing HOSTINGER_SMTP_USER/PASS)');
   }
@@ -118,7 +118,8 @@ async function sendBrandedEmail({ to, subject, html, text, attachments }) {
     subject,
     html,
     text,
-    attachments: logo.concat(attachments || [])
+    attachments: logo.concat(attachments || []),
+    headers: headers || undefined
   });
 }
 
