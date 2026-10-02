@@ -1,12 +1,14 @@
 // GET /api/consultation-info?t=<meeting_token>
 //
 // Public, read-only lookup for the patient-facing waiting room
-// (consultation.html) to render "your consultation is at 3:00 PM" before the
-// join window opens. The token itself is the only credential needed — see
-// get_booking_by_meeting_token's own comment for why that's safe (32 random
-// bytes, unguessable, resolves to exactly one paid booking).
+// (consultation.html). The token itself is the only credential needed — it's
+// 32 random bytes, unguessable, and resolves to exactly one paid booking.
+// Only what the waiting room displays is returned; the room name stays
+// server-side.
 
 const { callRpc } = require('./_supabase');
+
+const JOIN_OPENS_MINUTES_BEFORE = 10;
 
 module.exports = async (req, res) => {
   if (req.method !== 'GET') {
@@ -14,26 +16,34 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const meetingToken = (req.query.t || '').trim();
+  const meetingToken = String(req.query.t || '').trim();
   if (!meetingToken) {
     res.status(400).json({ error: 'Missing token' });
     return;
   }
 
   try {
-    const rows = await callRpc('get_booking_by_meeting_token', { p_token: meetingToken });
-    const booking = rows && rows[0];
+    const booking = await callRpc('get_consultation_by_token', { p_token: meetingToken });
     if (!booking) {
       res.status(404).json({ error: 'This consultation link is invalid or has expired.' });
       return;
     }
 
+    const startsAt = new Date(booking.starts_at);
+    const endsAt = new Date(startsAt.getTime() + booking.duration_minutes * 60000);
+    const cancelled = booking.booking_status === 'cancelled' || booking.booking_status === 'refunded';
+    const ended = booking.meeting_status === 'ended' || Date.now() > endsAt.getTime();
+
+    res.setHeader('Cache-Control', 'no-store');
     res.status(200).json({
-      fullName: booking.full_name,
+      firstName: booking.first_name,
       reason: booking.reason,
-      scheduledAt: booking.meeting_scheduled_at,
-      durationMinutes: booking.meeting_duration_minutes,
-      status: booking.meeting_status
+      startsAt: startsAt.toISOString(),
+      endsAt: endsAt.toISOString(),
+      opensAt: new Date(startsAt.getTime() - JOIN_OPENS_MINUTES_BEFORE * 60000).toISOString(),
+      durationMinutes: booking.duration_minutes,
+      status: cancelled ? 'cancelled' : (ended ? 'ended' : booking.meeting_status),
+      serverNow: new Date().toISOString()
     });
   } catch (err) {
     console.error('consultation-info: failed', err.message);

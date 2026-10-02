@@ -10,9 +10,12 @@ const nodemailer = require('nodemailer');
 const fs = require('fs');
 const path = require('path');
 
-// Builds the branded card email body. Callers supply the copy; the chrome
-// (header, card, footer, disclaimer) stays identical across every email.
-function buildBrandedEmailHtml({ eyebrow, heading, bodyHtml, ctaLabel, ctaUrl }) {
+const DEFAULT_FOOTER_NOTE = "You're receiving this email because you subscribed to updates at clinipausemd.com.";
+
+// Builds the branded card email body. Callers supply the copy (already
+// HTML-escaped); the chrome (header, card, footer, disclaimer) stays
+// identical across every email.
+function buildBrandedEmailHtml({ eyebrow, heading, bodyHtml, ctaLabel, ctaUrl, afterCtaHtml, footerNote }) {
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -49,6 +52,7 @@ function buildBrandedEmailHtml({ eyebrow, heading, bodyHtml, ctaLabel, ctaUrl })
                   </td>
                 </tr>
               </table>` : ''}
+              ${afterCtaHtml || ''}
             </td>
           </tr>
 
@@ -71,7 +75,7 @@ function buildBrandedEmailHtml({ eyebrow, heading, bodyHtml, ctaLabel, ctaUrl })
         </table>
 
         <p style="max-width:520px; margin:20px auto 0; font-size:12px; color:#a7aeb4; text-align:center; line-height:1.6;">
-          You're receiving this email because you subscribed to updates at clinipausemd.com.<br>
+          ${footerNote || DEFAULT_FOOTER_NOTE}<br>
           CliniPause provides education and personalized wellness guidance; it does not diagnose, prescribe, or replace care from a licensed clinician.
         </p>
       </td>
@@ -95,7 +99,8 @@ function createTransporter() {
 
 // Sends one branded email. `to` may be a single address or an array of
 // addresses (nodemailer accepts either as a comma-joined string).
-async function sendBrandedEmail({ to, subject, html, text }) {
+// `attachments` are extra nodemailer attachments (e.g. a calendar invite).
+async function sendBrandedEmail({ to, subject, html, text, attachments }) {
   if (!process.env.HOSTINGER_SMTP_USER || !process.env.HOSTINGER_SMTP_PASS) {
     throw new Error('Email is not configured (missing HOSTINGER_SMTP_USER/PASS)');
   }
@@ -103,6 +108,9 @@ async function sendBrandedEmail({ to, subject, html, text }) {
   const transporter = createTransporter();
   const logoPath = path.join(process.cwd(), 'assets', 'images', 'logo-main-color.png');
   const toAddress = Array.isArray(to) ? to.join(',') : to;
+  const logo = fs.existsSync(logoPath)
+    ? [{ filename: 'clinipause-logo.png', path: logoPath, cid: 'clinipause-logo' }]
+    : [];
 
   return transporter.sendMail({
     from: '"CliniPause" <' + process.env.HOSTINGER_SMTP_USER + '>',
@@ -110,11 +118,7 @@ async function sendBrandedEmail({ to, subject, html, text }) {
     subject,
     html,
     text,
-    attachments: fs.existsSync(logoPath) ? [{
-      filename: 'clinipause-logo.png',
-      path: logoPath,
-      cid: 'clinipause-logo'
-    }] : []
+    attachments: logo.concat(attachments || [])
   });
 }
 

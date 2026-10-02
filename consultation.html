@@ -2,57 +2,73 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Your Video Consultation — CliniPause</title>
 <meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baskervville:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/images/favicon-32.png">
 <link rel="stylesheet" href="css/style.css">
 <style>
-  body { background: #0c211b; min-height: 100vh; }
-  .consult-wrap { max-width: 720px; margin: 0 auto; padding: 32px 20px 60px; }
-  .consult-brand { display: flex; align-items: center; gap: 10px; justify-content: center; margin-bottom: 28px; }
-  .consult-brand img { width: 36px; height: 36px; border-radius: 10px; }
-  .consult-brand span { font-family: 'Baskervville', serif; font-size: 22px; color: #fff; }
-  .consult-card { background: #fff; border-radius: 20px; padding: 36px 32px; box-shadow: 0 10px 40px rgba(0,0,0,0.25); }
-  .consult-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #6cbf3d; margin: 0 0 10px; }
-  .consult-heading { font-family: 'Baskervville', serif; font-size: 26px; color: #121212; margin: 0 0 16px; }
-  .consult-line { font-size: 15px; line-height: 1.7; color: #3a3f42; margin: 0 0 12px; }
-  .consult-when { font-size: 16px; font-weight: 600; color: #121212; margin: 0 0 20px; }
-  .consult-btn {
-    display: inline-block; background: #6cbf3d; color: #fff; border: none; border-radius: 999px;
-    padding: 14px 30px; font-size: 15px; font-weight: 600; cursor: pointer; text-decoration: none;
-  }
-  .consult-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-  .consult-error { background: #fdeaea; color: #a12626; font-size: 14px; padding: 12px 16px; border-radius: 10px; margin: 0 0 18px; }
-  .consult-status { background: #eef7e8; color: #2f6b1d; font-size: 14px; padding: 12px 16px; border-radius: 10px; margin: 0 0 18px; }
+  body { background: #0c211b; min-height: 100vh; margin: 0; font-family: var(--font-sans); }
+  .consult-wrap { max-width: 760px; margin: 0 auto; padding: 28px 16px 60px; }
+  .consult-brand { display: flex; align-items: center; gap: 10px; justify-content: center; margin-bottom: 24px; }
+  .consult-brand img { width: 34px; height: 34px; border-radius: 10px; background: #fff; padding: 3px; }
+  .consult-brand span { font-family: var(--font-serif); font-size: 22px; color: #fff; }
+  .consult-card { background: #fff; border-radius: 22px; padding: 32px 28px; box-shadow: 0 12px 40px rgba(0,0,0,0.28); }
+  .consult-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--primary-p300); margin: 0 0 8px; }
+  .consult-heading { font-family: var(--font-serif); font-size: 28px; line-height: 1.25; color: var(--black); margin: 0 0 18px; }
+  .consult-line { font-size: 15px; line-height: 1.7; color: #3a3f42; margin: 0 0 14px; }
+  .consult-details { border: 1px solid var(--neutral-n30); border-radius: 16px; margin: 0 0 22px; }
+  .consult-details div { display: flex; justify-content: space-between; gap: 16px; padding: 12px 16px; border-bottom: 1px solid var(--neutral-n30); font-size: 14px; }
+  .consult-details div:last-child { border-bottom: none; }
+  .consult-details span { color: var(--neutral-n200); flex-shrink: 0; }
+  .consult-details strong { text-align: right; font-weight: 600; color: var(--black); }
+  .consult-details small { display: block; font-weight: 400; color: var(--neutral-n200); font-size: 12px; }
+  .consult-countdown { display: flex; align-items: center; gap: 12px; background: #f4faf2; border-radius: 14px; padding: 14px 16px; margin: 0 0 20px; color: #2f4a24; font-size: 14px; }
+  .consult-countdown strong { font-size: 20px; font-variant-numeric: tabular-nums; color: var(--primary-p400); }
+  .consult-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+  .consult-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: var(--primary-p300); color: #fff; border: none; border-radius: 999px; padding: 14px 28px; font-size: 15px; font-weight: 600; cursor: pointer; text-decoration: none; font-family: inherit; }
+  .consult-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .consult-btn.secondary { background: #fff; color: var(--black); border: 1.5px solid var(--neutral-n30); }
+  .consult-msg { font-size: 13px; color: var(--neutral-n200); margin: 14px 0 0; min-height: 18px; }
+  .consult-error { background: #fdeaea; color: #a12626; font-size: 14px; padding: 12px 16px; border-radius: 12px; margin: 0 0 18px; }
+  .consult-preview { display: none; margin: 0 0 20px; }
+  .consult-preview.show { display: block; }
+  .consult-preview video { width: 100%; max-height: 260px; border-radius: 14px; background: #000; object-fit: cover; transform: scaleX(-1); }
+  .consult-preview p { font-size: 13px; color: var(--neutral-n200); margin: 8px 0 0; }
+  .consult-tips { margin: 22px 0 0; padding: 16px 18px; background: var(--neutral-n20); border-radius: 14px; font-size: 13px; line-height: 1.8; color: #3a3f42; }
 
-  /* Video call room */
   #call-room { display: none; }
   #call-room.active { display: block; }
-  .video-grid { position: relative; background: #000; border-radius: 16px; overflow: hidden; aspect-ratio: 16 / 9; }
-  .video-grid video { width: 100%; height: 100%; object-fit: cover; }
-  #remote-media { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: #000; }
+  .call-card { background: #10261f; border-radius: 22px; padding: 14px; box-shadow: 0 12px 40px rgba(0,0,0,0.28); }
+  .call-topbar { display: flex; justify-content: space-between; align-items: center; color: #cfe8bd; font-size: 13px; padding: 2px 6px 12px; }
+  .call-timer { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .call-timer.warn { color: #ffcf6e; }
+  .video-stage { position: relative; background: #000; border-radius: 16px; overflow: hidden; aspect-ratio: 4 / 3; }
+  @media (min-width: 640px) { .video-stage { aspect-ratio: 16 / 9; } }
+  #remote-media { position: absolute; inset: 0; }
   #remote-media video { width: 100%; height: 100%; object-fit: cover; }
-  #local-media { position: absolute; bottom: 12px; right: 12px; width: 110px; height: 80px; border-radius: 10px; overflow: hidden; border: 2px solid #fff; }
-  #local-media video { width: 100%; height: 100%; object-fit: cover; }
-  .call-controls { display: flex; gap: 12px; justify-content: center; margin-top: 18px; }
-  .call-btn {
-    width: 52px; height: 52px; border-radius: 50%; border: none; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; background: #2a2f33; color: #fff;
-  }
+  .remote-waiting { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: #cfe8bd; font-size: 15px; text-align: center; padding: 20px; }
+  .remote-waiting .pulse { width: 14px; height: 14px; border-radius: 50%; background: #6cbf3d; animation: pulse 1.4s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 0.35; transform: scale(0.9); } 50% { opacity: 1; transform: scale(1.15); } }
+  #local-media { position: absolute; bottom: 12px; right: 12px; width: 28%; max-width: 160px; aspect-ratio: 3 / 4; border-radius: 12px; overflow: hidden; border: 2px solid rgba(255,255,255,0.85); background: #222; }
+  #local-media video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+  .call-controls { display: flex; gap: 14px; justify-content: center; padding: 16px 0 6px; }
+  .call-btn { width: 54px; height: 54px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; background: #2a3d36; color: #fff; }
   .call-btn.off { background: #a12626; }
-  .call-btn.hangup { background: #a12626; }
-  .call-countdown { text-align: center; color: #8a9199; font-size: 13px; margin-top: 10px; }
+  .call-btn.hangup { background: #c0392b; }
+  .call-btn svg { width: 22px; height: 22px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 </style>
 </head>
 <body>
 
 <div class="consult-wrap">
   <div class="consult-brand">
-    <img src="assets/images/logo-main-color.png" alt="CliniPause">
+    <img src="assets/images/logo-main-color.png" alt="">
     <span>CliniPause</span>
   </div>
 
@@ -63,17 +79,32 @@
     </div>
   </div>
 
-  <div class="consult-card" id="call-room">
-    <div class="video-grid">
-      <div id="remote-media"></div>
-      <div id="local-media"></div>
+  <div id="call-room">
+    <div class="call-card">
+      <div class="call-topbar">
+        <span>Consultation with Dr. Ivanah Thomas</span>
+        <span class="call-timer" id="call-timer"></span>
+      </div>
+      <div class="video-stage">
+        <div id="remote-media"></div>
+        <div class="remote-waiting" id="remote-waiting"><span class="pulse"></span>Waiting for Dr. Thomas to join…</div>
+        <div id="local-media"></div>
+      </div>
+      <div class="call-controls">
+        <button type="button" class="call-btn" id="toggle-mic" aria-pressed="false" title="Mute microphone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4"/></svg>
+          <span class="sr-only">Mute microphone</span>
+        </button>
+        <button type="button" class="call-btn" id="toggle-cam" aria-pressed="false" title="Turn camera off">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/></svg>
+          <span class="sr-only">Turn camera off</span>
+        </button>
+        <button type="button" class="call-btn hangup" id="hangup" title="Leave call">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 15c5-5 13-5 18 0l-2.5 2.5-3-1.5v-2.5a10 10 0 0 0-7 0V16l-3 1.5z"/></svg>
+          <span class="sr-only">Leave call</span>
+        </button>
+      </div>
     </div>
-    <div class="call-controls">
-      <button type="button" class="call-btn" id="toggle-mic" title="Mute/unmute">🎤</button>
-      <button type="button" class="call-btn" id="toggle-cam" title="Camera on/off">📷</button>
-      <button type="button" class="call-btn hangup" id="hangup" title="Leave call">⏻</button>
-    </div>
-    <p class="call-countdown" id="call-countdown"></p>
   </div>
 </div>
 
@@ -85,10 +116,15 @@
   var waitingContent = document.getElementById('waiting-content');
   var waitingCard = document.getElementById('waiting-card');
   var callRoom = document.getElementById('call-room');
-  var countdownEl = document.getElementById('call-countdown');
+  var timerEl = document.getElementById('call-timer');
 
+  var info = null;
+  var clockSkewMs = 0;       // server time minus this device's time
   var room = null;
-  var endsAtTimer = null;
+  var previewStream = null;
+  var tickTimer = null;
+
+  function now() { return Date.now() + clockSkewMs; }
 
   function escapeHtml(str) {
     return String(str == null ? '' : str).replace(/[&<>"']/g, function (c) {
@@ -96,167 +132,237 @@
     });
   }
 
-  function renderError(message) {
-    waitingContent.innerHTML = '<p class="consult-error">' + escapeHtml(message) + '</p>' +
-      '<p class="consult-line">If you believe this is a mistake, please contact us at <a href="mailto:info@clinipausemd.com">info@clinipausemd.com</a>.</p>';
+  function fmtDay(d, tz) {
+    return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: tz });
+  }
+  function fmtTime(d, tz) {
+    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: tz, timeZoneName: 'short' });
+  }
+  function fmtCountdown(ms) {
+    var s = Math.max(0, Math.floor(ms / 1000));
+    var h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+    return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(sec).padStart(2, '0');
   }
 
-  function fmtWhen(iso) {
-    var d = new Date(iso);
-    return d.toLocaleString('en-US', {
-      weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
-      hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
-    });
+  function renderMessage(heading, html, isError) {
+    waitingContent.innerHTML =
+      '<h1 class="consult-heading">' + heading + '</h1>' +
+      (isError ? '<p class="consult-error">' + html + '</p>' : '<p class="consult-line">' + html + '</p>') +
+      '<p class="consult-line">Questions? Email <a href="mailto:info@clinipausemd.com">info@clinipausemd.com</a>.</p>';
   }
 
   if (!meetingToken) {
-    renderError('This link is missing your consultation code. Please use the link from your confirmation email.');
+    renderMessage('Link incomplete', 'This link is missing your consultation code. Please use the button in your confirmation email.', true);
     return;
   }
 
   function loadInfo() {
-    fetch('/api/consultation-info?t=' + encodeURIComponent(meetingToken))
+    var sentAt = Date.now();
+    fetch('/api/consultation-info?t=' + encodeURIComponent(meetingToken), { cache: 'no-store' })
       .then(function (res) { return res.json().then(function (body) { return { ok: res.ok, body: body }; }); })
       .then(function (result) {
-        if (!result.ok) { renderError(result.body.error || 'This consultation link is invalid or has expired.'); return; }
-        renderWaitingRoom(result.body);
+        if (!result.ok) { renderMessage('Link not found', escapeHtml(result.body.error || 'This consultation link is invalid or has expired.'), true); return; }
+        info = result.body;
+        if (info.serverNow) clockSkewMs = new Date(info.serverNow).getTime() - Math.round((sentAt + Date.now()) / 2);
+        renderWaitingRoom();
       })
-      .catch(function () { renderError('Could not load your consultation details. Please check your connection and reload.'); });
+      .catch(function () { renderMessage('Connection problem', 'Could not load your consultation details. Please check your connection and reload the page.', true); });
   }
 
-  function renderWaitingRoom(info) {
-    var when = fmtWhen(info.scheduledAt);
-    var ended = info.status === 'ended';
+  function renderWaitingRoom() {
+    var start = new Date(info.startsAt);
+    if (info.status === 'cancelled') {
+      renderMessage('This consultation was cancelled', 'Your consultation on ' + escapeHtml(fmtDay(start, 'America/New_York')) + ' has been cancelled. You can <a href="/?book=1">book a new time here</a>.');
+      return;
+    }
+    if (info.status === 'ended' || now() > new Date(info.endsAt).getTime()) {
+      renderMessage('This consultation has ended', 'Thank you for meeting with us' + (info.firstName ? ', ' + escapeHtml(info.firstName) : '') + '. If you need a follow-up, you can <a href="/?book=1">book another consultation</a>.');
+      return;
+    }
+
+    var localTz;
+    try { localTz = Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (e) { localTz = 'America/New_York'; }
+    var sameTz = localTz === 'America/New_York';
 
     waitingContent.innerHTML =
-      '<h1 class="consult-heading">' + (ended ? 'This Consultation Has Ended' : 'Your Consultation with Dr. Ivanah Thomas') + '</h1>' +
-      '<p class="consult-when">' + escapeHtml(when) + '</p>' +
-      (info.reason ? '<p class="consult-line"><strong>Reason for visit:</strong> ' + escapeHtml(info.reason) + '</p>' : '') +
-      (ended
-        ? '<p class="consult-line">Thank you for meeting with us. If you need to follow up, please reach out at info@clinipausemd.com.</p>'
-        : '<p class="consult-line">The join button activates 10 minutes before your scheduled time and the call will end automatically after your session.</p>' +
-          '<button type="button" class="consult-btn" id="join-btn">Join Video Call</button>' +
-          '<p id="join-status" style="margin-top:14px;font-size:13px;color:#8a9199;"></p>');
+      '<h1 class="consult-heading">Hi ' + escapeHtml(info.firstName || 'there') + ', welcome to your consultation</h1>' +
+      '<div class="consult-details">' +
+        '<div><span>Date</span><strong>' + escapeHtml(fmtDay(start, localTz)) + '</strong></div>' +
+        '<div><span>Time</span><strong>' + escapeHtml(fmtTime(start, localTz)) +
+          (sameTz ? '' : '<small>' + escapeHtml(fmtTime(start, 'America/New_York')) + ' clinic time</small>') + '</strong></div>' +
+        '<div><span>Length</span><strong>' + escapeHtml(info.durationMinutes === 60 ? '1 hour' : info.durationMinutes + ' minutes') + '</strong></div>' +
+        '<div><span>With</span><strong>Dr. Ivanah Thomas</strong></div>' +
+        (info.reason ? '<div><span>Topic</span><strong>' + escapeHtml(info.reason) + '</strong></div>' : '') +
+      '</div>' +
+      '<div class="consult-countdown" id="countdown"></div>' +
+      '<div class="consult-preview" id="preview"><video id="preview-video" autoplay muted playsinline></video><p>Looking good? You\'re ready to join.</p></div>' +
+      '<div class="consult-actions">' +
+        '<button type="button" class="consult-btn" id="join-btn" disabled>Join Video Call</button>' +
+        '<button type="button" class="consult-btn secondary" id="check-btn">Check camera &amp; mic</button>' +
+      '</div>' +
+      '<p class="consult-msg" id="join-status"></p>' +
+      '<div class="consult-tips"><strong>Tips:</strong> use Chrome or Safari, allow camera and microphone access when asked, and find a quiet, private space. Your call ends automatically after ' + escapeHtml(info.durationMinutes) + ' minutes.</div>';
 
-    var joinBtn = document.getElementById('join-btn');
-    if (joinBtn) joinBtn.addEventListener('click', attemptJoin);
+    document.getElementById('join-btn').addEventListener('click', attemptJoin);
+    document.getElementById('check-btn').addEventListener('click', checkDevices);
+    tickWaiting();
+    tickTimer = setInterval(tickWaiting, 1000);
+  }
+
+  function tickWaiting() {
+    var el = document.getElementById('countdown');
+    var btn = document.getElementById('join-btn');
+    if (!el || !btn) { clearInterval(tickTimer); return; }
+    var opensIn = new Date(info.opensAt).getTime() - now();
+    var startsIn = new Date(info.startsAt).getTime() - now();
+    var endsIn = new Date(info.endsAt).getTime() - now();
+
+    if (endsIn <= 0) { clearInterval(tickTimer); info.status = 'ended'; renderWaitingRoom(); return; }
+    if (opensIn > 0) {
+      el.innerHTML = 'Your room opens in <strong>' + fmtCountdown(opensIn) + '</strong>';
+      btn.disabled = true;
+    } else {
+      el.innerHTML = startsIn > 0
+        ? 'Your room is open — consultation starts in <strong>' + fmtCountdown(startsIn) + '</strong>'
+        : 'Your consultation is <strong>in progress</strong> — join now';
+      if (btn.textContent === 'Join Video Call') btn.disabled = false;
+    }
+  }
+
+  function stopPreview() {
+    if (previewStream) previewStream.getTracks().forEach(function (t) { t.stop(); });
+    previewStream = null;
+  }
+
+  function checkDevices() {
+    var statusEl = document.getElementById('join-status');
+    statusEl.textContent = 'Asking your browser for camera and microphone access…';
+    navigator.mediaDevices.getUserMedia({ audio: true, video: true }).then(function (stream) {
+      stopPreview();
+      previewStream = stream;
+      document.getElementById('preview-video').srcObject = stream;
+      document.getElementById('preview').classList.add('show');
+      statusEl.textContent = 'Camera and microphone are working.';
+    }).catch(function () {
+      statusEl.textContent = 'We couldn\'t access your camera or microphone. Check your browser\'s permission settings (the camera icon in the address bar) and try again.';
+    });
   }
 
   function attemptJoin() {
-    var joinBtn = document.getElementById('join-btn');
+    var btn = document.getElementById('join-btn');
     var statusEl = document.getElementById('join-status');
-    joinBtn.disabled = true;
-    joinBtn.textContent = 'Connecting…';
+    btn.disabled = true;
+    btn.textContent = 'Connecting…';
+    statusEl.textContent = '';
 
-    navigator.mediaDevices.getUserMedia({ audio: true, video: true }).catch(function () {
-      // Twilio Video's connect() will still prompt / surface its own error if
-      // this fails — we only use this to fail fast with a clearer message.
-      return null;
-    }).then(function () {
-      return fetch('/api/twilio-video-token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: meetingToken })
-      });
+    fetch('/api/twilio-video-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: meetingToken })
     }).then(function (res) {
       return res.json().then(function (body) { return { ok: res.ok, body: body }; });
     }).then(function (result) {
-      if (!result.ok) {
-        joinBtn.disabled = false;
-        joinBtn.textContent = 'Join Video Call';
-        statusEl.textContent = result.body.error || 'Could not join yet.';
-        return;
-      }
-      startCall(result.body);
-    }).catch(function () {
-      joinBtn.disabled = false;
-      joinBtn.textContent = 'Join Video Call';
-      statusEl.textContent = 'Could not connect. Please check your camera/microphone permissions and try again.';
+      if (!result.ok) throw new Error(result.body.error || 'Could not join yet.');
+      stopPreview();
+      return startCall(result.body);
+    }).catch(function (err) {
+      btn.textContent = 'Join Video Call';
+      btn.disabled = false;
+      statusEl.textContent = err.message || 'Could not connect. Please check your camera and microphone permissions and try again.';
     });
   }
 
-  function startCall(info) {
-    waitingCard.style.display = 'none';
-    callRoom.classList.add('active');
-
-    Twilio.Video.connect(info.accessToken, {
-      name: info.roomName,
+  function startCall(callInfo) {
+    return Twilio.Video.connect(callInfo.accessToken, {
+      name: callInfo.roomName,
       audio: true,
       video: { width: 640 }
-    }).then(function (connectedRoom) {
-      room = connectedRoom;
-      attachLocalTrack(room);
-      room.participants.forEach(attachParticipant);
-      room.on('participantConnected', attachParticipant);
-      room.on('participantDisconnected', detachParticipant);
-      room.on('disconnected', onDisconnected);
+    }).then(function (connected) {
+      room = connected;
+      clearInterval(tickTimer);
+      waitingCard.style.display = 'none';
+      callRoom.classList.add('active');
 
-      startCountdown(info.endsAt);
-    }).catch(function (err) {
-      waitingCard.style.display = 'block';
-      callRoom.classList.remove('active');
-      renderError('Could not connect to the video call: ' + (err && err.message ? err.message : 'unknown error') + '. Please try again.');
-    });
-  }
-
-  function attachLocalTrack(connectedRoom) {
-    var container = document.getElementById('local-media');
-    connectedRoom.localParticipant.tracks.forEach(function (pub) {
-      if (pub.track) container.appendChild(pub.track.attach());
+      connected.localParticipant.tracks.forEach(function (pub) {
+        if (pub.track) document.getElementById('local-media').appendChild(pub.track.attach());
+      });
+      connected.participants.forEach(attachParticipant);
+      connected.on('participantConnected', attachParticipant);
+      connected.on('participantDisconnected', function () {
+        if (!connected.participants.size) {
+          document.getElementById('remote-media').innerHTML = '';
+          document.getElementById('remote-waiting').style.display = 'flex';
+          document.getElementById('remote-waiting').lastChild.textContent = 'Dr. Thomas has stepped away — waiting for them to rejoin…';
+        }
+      });
+      connected.on('disconnected', onDisconnected);
+      startCallTimer(callInfo.endsAt);
+      window.addEventListener('beforeunload', function () { if (room) room.disconnect(); });
     });
   }
 
   function attachParticipant(participant) {
     var container = document.getElementById('remote-media');
+    document.getElementById('remote-waiting').style.display = 'none';
     participant.tracks.forEach(function (pub) {
       if (pub.isSubscribed && pub.track) container.appendChild(pub.track.attach());
     });
-    participant.on('trackSubscribed', function (track) {
-      container.appendChild(track.attach());
+    participant.on('trackSubscribed', function (track) { container.appendChild(track.attach()); });
+    participant.on('trackUnsubscribed', function (track) { track.detach().forEach(function (el) { el.remove(); }); });
+  }
+
+  function onDisconnected(r) {
+    r.localParticipant.tracks.forEach(function (pub) {
+      if (pub.track && pub.track.stop) pub.track.stop();
+      if (pub.track) pub.track.detach().forEach(function (el) { el.remove(); });
     });
-  }
-
-  function detachParticipant() {
-    document.getElementById('remote-media').innerHTML = '';
-  }
-
-  function onDisconnected() {
+    room = null;
+    clearInterval(tickTimer);
     callRoom.classList.remove('active');
     waitingCard.style.display = 'block';
-    if (endsAtTimer) clearInterval(endsAtTimer);
-    renderWaitingRoom({ scheduledAt: new Date().toISOString(), status: 'ended' });
+    var ended = now() >= new Date(info.endsAt).getTime() - 1000;
+    if (ended) {
+      info.status = 'ended';
+      renderWaitingRoom();
+    } else {
+      renderWaitingRoom();
+      document.getElementById('join-status').textContent = 'You left the call. You can rejoin any time before your session ends.';
+    }
   }
 
-  function startCountdown(endsAtIso) {
+  function startCallTimer(endsAtIso) {
     var endsAt = new Date(endsAtIso).getTime();
     function tick() {
-      var remainingMs = endsAt - Date.now();
-      if (remainingMs <= 0) {
-        countdownEl.textContent = 'Your session has ended.';
+      var remaining = endsAt - now();
+      if (remaining <= 0) {
+        timerEl.textContent = 'Session ended';
         if (room) room.disconnect();
         return;
       }
-      var mins = Math.floor(remainingMs / 60000);
-      var secs = Math.floor((remainingMs % 60000) / 1000);
-      countdownEl.textContent = 'Time remaining: ' + mins + ':' + String(secs).padStart(2, '0');
+      timerEl.textContent = fmtCountdown(remaining) + ' left';
+      timerEl.classList.toggle('warn', remaining <= 5 * 60000);
     }
     tick();
-    endsAtTimer = setInterval(tick, 1000);
+    tickTimer = setInterval(tick, 1000);
+  }
+
+  function toggleTracks(kind, btn, onLabel, offLabel) {
+    if (!room) return;
+    var pubs = kind === 'audio' ? room.localParticipant.audioTracks : room.localParticipant.videoTracks;
+    pubs.forEach(function (pub) {
+      var turnOff = pub.track.isEnabled;
+      if (turnOff) pub.track.disable(); else pub.track.enable();
+      btn.classList.toggle('off', turnOff);
+      btn.setAttribute('aria-pressed', String(turnOff));
+      btn.title = turnOff ? offLabel : onLabel;
+    });
   }
 
   document.getElementById('toggle-mic').addEventListener('click', function (e) {
-    if (!room) return;
-    room.localParticipant.audioTracks.forEach(function (pub) {
-      if (pub.track.isEnabled) { pub.track.disable(); e.currentTarget.classList.add('off'); }
-      else { pub.track.enable(); e.currentTarget.classList.remove('off'); }
-    });
+    toggleTracks('audio', e.currentTarget, 'Mute microphone', 'Unmute microphone');
   });
   document.getElementById('toggle-cam').addEventListener('click', function (e) {
-    if (!room) return;
-    room.localParticipant.videoTracks.forEach(function (pub) {
-      if (pub.track.isEnabled) { pub.track.disable(); e.currentTarget.classList.add('off'); }
-      else { pub.track.enable(); e.currentTarget.classList.remove('off'); }
-    });
+    toggleTracks('video', e.currentTarget, 'Turn camera off', 'Turn camera on');
   });
   document.getElementById('hangup').addEventListener('click', function () {
     if (room) room.disconnect();

@@ -29,7 +29,7 @@
 
 <div class="call-wrap">
   <div class="call-topline">
-    <a href="#" id="back-link">&larr; Back to booking</a>
+    <a href="#" id="back-link">&larr; Back to consultation</a>
   </div>
 
   <div class="call-card" id="call-card">
@@ -43,9 +43,15 @@
         <div id="local-media"></div>
       </div>
       <div class="call-controls">
-        <button type="button" class="call-btn" id="toggle-mic" title="Mute/unmute">🎤</button>
-        <button type="button" class="call-btn" id="toggle-cam" title="Camera on/off">📷</button>
-        <button type="button" class="call-btn hangup" id="hangup" title="Leave call">⏻</button>
+        <button type="button" class="call-btn" id="toggle-mic" title="Mute microphone" aria-label="Mute microphone">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4"/></svg>
+        </button>
+        <button type="button" class="call-btn" id="toggle-cam" title="Turn camera off" aria-label="Turn camera off">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/></svg>
+        </button>
+        <button type="button" class="call-btn hangup" id="hangup" title="Leave call" aria-label="Leave call">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 15c5-5 13-5 18 0l-2.5 2.5-3-1.5v-2.5a10 10 0 0 0-7 0V16l-3 1.5z"/></svg>
+        </button>
       </div>
       <p class="call-countdown" id="call-countdown"></p>
     </div>
@@ -67,7 +73,7 @@
   var room = null;
   var endsAtTimer = null;
 
-  document.getElementById('back-link').href = 'order-detail.html?id=' + encodeURIComponent(bookingId || '') + '&type=booking';
+  document.getElementById('back-link').href = 'bookings.html?booking=' + encodeURIComponent(bookingId || '');
 
   function escapeHtml(str) {
     return String(str == null ? '' : str).replace(/[&<>"']/g, function (c) {

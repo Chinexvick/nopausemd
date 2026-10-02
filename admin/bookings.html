@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Bookings · CliniPauseMD Admin</title>
+<title>Consultations · CliniPauseMD Admin</title>
 <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
@@ -32,7 +32,7 @@
     <header class="topbar">
       <div class="search-input-wrap">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-        <input class="search-input" type="text" id="booking-search" placeholder="Search bookings by name or email..." />
+        <input class="search-input" type="text" id="booking-search" placeholder="Search patients by name, email or phone..." />
       </div>
       <div class="topbar-actions">
         <button class="icon-btn" title="Notifications">
@@ -47,48 +47,108 @@
       </div>
     </header>
 
-          <div class="section-header">
+    <main class="page-content bk-page">
+
+      <div class="section-header">
         <div>
-          <h1 class="page-title">Bookings</h1>
-          <p class="page-subtitle"><span class="orders-live-dot"></span>Consultation bookings from clinipausemd.com and drivanah.com.</p>
+          <h1 class="page-title">Consultations</h1>
+          <p class="page-subtitle"><span class="orders-live-dot"></span>Video consultations booked on the website. All times are clinic time (Eastern).</p>
         </div>
-        <div class="header-actions"><a class="btn btn-secondary" href="#" id="refresh-bookings">Refresh</a></div>
-      </div>
-
-      <div class="kpi-strip">
-        <div class="kpi-card">
-          <div class="kpi-label">Upcoming (paid)</div>
-          <div class="kpi-value" id="kpi-upcoming">–</div>
-          <div class="kpi-delta green"><span class="dot"></span>Confirmed</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Pending Payment</div>
-          <div class="kpi-value" id="kpi-pending">–</div>
-          <div class="kpi-delta amber"><span class="dot"></span>Not yet confirmed</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">CliniPauseMD.com</div>
-          <div class="kpi-value" id="kpi-site-a">–</div>
-          <div class="kpi-delta blue"><span class="dot"></span>Confirmed bookings</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">DrIvanah.com</div>
-          <div class="kpi-value" id="kpi-site-b">–</div>
-          <div class="kpi-delta blue"><span class="dot"></span>Confirmed bookings</div>
+        <div class="header-actions">
+          <button type="button" class="btn btn-secondary" id="bk-block-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M9 15l6 0"/></svg>
+            Closed days
+          </button>
+          <button type="button" class="btn btn-secondary" id="bk-refresh">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-2.64-6.36L21 8M21 3v5h-5"/></svg>
+            Refresh
+          </button>
         </div>
       </div>
 
-      <div class="subnav-pills" id="booking-filter-pills">
-        <span class="pill active" data-filter="all">All</span>
-        <span class="pill" data-filter="paid">Confirmed</span>
-        <span class="pill" data-filter="pending_payment">Pending</span>
-      </div>
-
-      <div class="card" style="padding:0;">
-        <div class="orders-table" id="bookings-table">
-          <div class="orders-empty">Loading bookings…</div>
+      <div class="kpi-strip bk-kpis">
+        <div class="kpi-card">
+          <div class="kpi-label">Today</div>
+          <div class="kpi-value" id="kpi-today">–</div>
+          <div class="kpi-delta"><span class="dot"></span><span id="kpi-today-sub">Sessions today</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Next 7 days</div>
+          <div class="kpi-value" id="kpi-week">–</div>
+          <div class="kpi-delta blue"><span class="dot"></span><span id="kpi-week-sub">Upcoming sessions</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Checkouts in progress</div>
+          <div class="kpi-value" id="kpi-holding">–</div>
+          <div class="kpi-delta amber"><span class="dot"></span><span id="kpi-holding-sub">Awaiting payment</span></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Revenue this month</div>
+          <div class="kpi-value" id="kpi-revenue">–</div>
+          <div class="kpi-delta"><span class="dot"></span><span id="kpi-revenue-sub">Paid sessions</span></div>
         </div>
       </div>
+
+      <div class="bk-toolbar">
+        <div class="bk-week-nav">
+          <button type="button" class="bk-icon-btn" id="bk-prev" aria-label="Previous week">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm" id="bk-today">Today</button>
+          <button type="button" class="bk-icon-btn" id="bk-next" aria-label="Next week">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+          <span class="bk-range" id="bk-range"></span>
+        </div>
+        <div class="bk-view-toggle" role="tablist" aria-label="View">
+          <button type="button" role="tab" data-view="list" class="active" aria-selected="true">List</button>
+          <button type="button" role="tab" data-view="week" aria-selected="false">Calendar</button>
+        </div>
+      </div>
+
+      <div class="bk-shell" id="bk-shell" data-view="list">
+        <aside class="bk-list-pane card">
+          <div class="bk-list-head">
+            <div class="bk-search">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              <input type="search" id="bk-search" placeholder="Search patients" autocomplete="off" aria-label="Search patients">
+            </div>
+            <div class="bk-filters" id="bk-filters" role="tablist" aria-label="Filter bookings">
+              <button type="button" class="pill active" data-filter="upcoming">Upcoming <span class="count" data-count="upcoming"></span></button>
+              <button type="button" class="pill" data-filter="today">Today <span class="count" data-count="today"></span></button>
+              <button type="button" class="pill" data-filter="past">Past <span class="count" data-count="past"></span></button>
+              <button type="button" class="pill" data-filter="unpaid">Unpaid <span class="count" data-count="unpaid"></span></button>
+              <button type="button" class="pill" data-filter="cancelled">Cancelled <span class="count" data-count="cancelled"></span></button>
+              <button type="button" class="pill" data-filter="all">All</button>
+            </div>
+          </div>
+          <div class="bk-list" id="bk-list">
+            <div class="bk-empty">Loading consultations…</div>
+          </div>
+        </aside>
+
+        <section class="bk-calendar card" aria-label="Week calendar">
+          <div class="bk-week-scroll">
+            <div class="bk-week" id="bk-week"></div>
+          </div>
+          <div class="bk-legend">
+            <span><i class="bk-lg bk-lg-upcoming"></i>Confirmed</span>
+            <span><i class="bk-lg bk-lg-live"></i>Live now</span>
+            <span><i class="bk-lg bk-lg-holding"></i>Awaiting payment</span>
+            <span><i class="bk-lg bk-lg-completed"></i>Completed</span>
+            <span><i class="bk-lg bk-lg-past"></i>Ended / no-show</span>
+          </div>
+        </section>
+      </div>
+
+      <div class="bk-backdrop" id="bk-backdrop" hidden></div>
+      <aside class="bk-detail" id="bk-detail" aria-label="Consultation details" aria-hidden="true"></aside>
+
+      <div class="bk-modal" id="bk-modal" role="dialog" aria-modal="true" aria-labelledby="bk-modal-title" hidden>
+        <div class="bk-modal-box" id="bk-modal-box"></div>
+      </div>
+
+      <div class="bk-toast" id="bk-toast" role="status" aria-live="polite"></div>
 
     </main>
   </div>

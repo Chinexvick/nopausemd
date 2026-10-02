@@ -85,7 +85,7 @@ module.exports = async (req, res) => {
     // plain authenticated REST read (not the anon key) is enough here —
     // no service-role key needed for this lookup.
     const bookingRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/store_bookings?id=eq.${encodeURIComponent(bookingId)}&select=id,meeting_room_name,meeting_room_sid,meeting_status,meeting_scheduled_at,meeting_duration_minutes`,
+      `${SUPABASE_URL}/rest/v1/store_bookings?id=eq.${encodeURIComponent(bookingId)}&select=id,status,meeting_room_name,meeting_room_sid,meeting_status,meeting_scheduled_at,meeting_duration_minutes`,
       { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${callerToken}` } }
     );
     const rows = await bookingRes.json();
@@ -95,17 +95,25 @@ module.exports = async (req, res) => {
       res.status(404).json({ error: 'No video consultation is scheduled for this booking.' });
       return;
     }
+    if (booking.status === 'cancelled' || booking.status === 'refunded') {
+      res.status(410).json({ error: 'This consultation was cancelled.' });
+      return;
+    }
     if (booking.meeting_status === 'ended') {
       res.status(410).json({ error: 'This consultation has ended.' });
       return;
     }
 
-    const room = await findOrCreateRoom(booking.meeting_room_name);
     const scheduledAt = new Date(booking.meeting_scheduled_at);
     const windowEnd = scheduledAt.getTime() + (booking.meeting_duration_minutes || 30) * 60 * 1000;
+    if (Date.now() > windowEnd) {
+      res.status(410).json({ error: 'This consultation’s booked time has passed.' });
+      return;
+    }
+    const room = await findOrCreateRoom(booking.meeting_room_name, { endsAt: new Date(windowEnd) });
 
     const videoToken = buildVideoAccessToken({
-      identity: 'Dr. ' + admin.firstName,
+      identity: admin.firstName + ' (CliniPause)',
       roomName: booking.meeting_room_name,
       ttlSeconds: Math.max(60, Math.ceil((windowEnd - Date.now()) / 1000) + 600)
     });
@@ -120,7 +128,11 @@ module.exports = async (req, res) => {
         Authorization: `Bearer ${callerToken}`,
         Prefer: 'return=minimal'
       },
-      body: JSON.stringify({ attended_by_name: admin.firstName, attended_by_email: admin.email, attended_at: new Date().toISOString() })
+      body: JSON.stringify(Object.assign(
+        { attended_by_name: admin.firstName, attended_by_email: admin.email, attended_at: new Date().toISOString() },
+        room && room.sid ? { meeting_room_sid: room.sid } : {},
+        booking.meeting_status !== 'active' ? { meeting_status: 'active', meeting_started_at: new Date().toISOString() } : {}
+      ))
     }).catch(function (err) { console.error('admin-video-token: failed to record attendance', err.message); });
 
     res.status(200).json({

@@ -1829,11 +1829,100 @@ ul { margin: 0; padding: 0; }
   margin: 0 auto 20px;
 }
 
+.booking-section-label {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--black);
+  margin: 0 0 10px;
+}
+
+.booking-tz {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--neutral-n200);
+}
+
+.booking-durations {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.booking-duration {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  padding: 16px;
+  border: 1.5px solid var(--neutral-n30);
+  border-radius: 16px;
+  background: var(--white);
+  cursor: pointer;
+  font-family: var(--font-sans);
+  color: var(--black);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.booking-duration:hover { border-color: var(--primary-p100); }
+
+.booking-duration.selected {
+  border-color: var(--primary-p300);
+  background: #f4faf2;
+  box-shadow: 0 0 0 3px rgba(47, 138, 42, 0.12);
+}
+
+.booking-duration .d-length { font-size: 15px; font-weight: 600; }
+.booking-duration .d-price { font-family: var(--font-serif); font-size: 22px; font-weight: 600; color: var(--primary-p300); min-height: 28px; }
+.booking-duration .d-desc { font-size: 12.5px; line-height: 1.45; color: var(--neutral-n200); }
+
+.booking-calendar-head button:disabled { opacity: 0.35; cursor: not-allowed; }
+
+.booking-day.closed:disabled { text-decoration: line-through; }
+
+.booking-slots-msg {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 14px;
+  color: var(--neutral-n200);
+  line-height: 1.5;
+}
+
+.booking-local-time {
+  min-height: 18px;
+  margin: 10px 0 18px;
+  font-size: 13px;
+  color: var(--neutral-n200);
+}
+
+.booking-summary .bs-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--neutral-n30);
+  line-height: 1.45;
+}
+
+.booking-summary .bs-row:last-child { border-bottom: none; }
+.booking-summary .bs-row > span { color: var(--neutral-n200); flex-shrink: 0; }
+.booking-summary .bs-row > strong { text-align: right; font-weight: 600; overflow-wrap: anywhere; }
+.booking-summary .bs-row small { display: block; font-weight: 400; font-size: 12px; color: var(--neutral-n200); }
+
 @media (max-width: 480px) {
-  .booking-modal { padding: 24px 20px; border-radius: 20px; }
+  .booking-overlay { padding: 16px 12px; }
+  .booking-modal { padding: 24px 18px; border-radius: 20px; }
   .booking-row-2 { grid-template-columns: 1fr; }
-  .booking-slots { grid-template-columns: repeat(2, 1fr); }
+  .booking-slots { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .booking-slot { font-size: 13px; padding: 10px 4px; }
   .booking-title { font-size: 22px; }
+  .booking-durations { gap: 10px; }
+  .booking-duration { padding: 14px 12px; }
+  .booking-duration .d-desc { display: none; }
+  .booking-actions .btn { flex: 1; }
 }
 
 /* ---------- Responsive ---------- */

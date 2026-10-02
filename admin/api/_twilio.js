@@ -87,27 +87,31 @@ async function twilioRequest(path, { method, form }) {
   return { ok: res.ok, status: res.status, data };
 }
 
-// Creates a Twilio Video "group" room if one with this unique name doesn't
-// already exist yet (idempotent — safe to call on every join attempt).
-// `maxMinutes` is enforced server-side by Twilio itself via a status
-// callback window is NOT available on group rooms, so the hard stop is done
-// by our own sweep in api/end-expired-video-meetings.js; this just sets a
-// generous empty-room timeout so an abandoned room cleans itself up.
-async function findOrCreateRoom(uniqueName) {
+// Creates a Twilio Video "group" room if one with this unique name isn't
+// already in progress (idempotent — safe to call on every join attempt).
+// `endsAt` (a Date) becomes Twilio's MaxParticipantDuration, a hard cap
+// Twilio enforces itself, so nobody stays connected past the booked time
+// even if their browser ignores the on-screen countdown. Empty/unused
+// rooms close themselves within minutes.
+async function findOrCreateRoom(uniqueName, opts) {
   const existing = await twilioRequest(`Rooms/${encodeURIComponent(uniqueName)}`, { method: 'GET' });
   if (existing.ok && existing.data && existing.data.status === 'in-progress') {
     return existing.data;
   }
 
-  const created = await twilioRequest('Rooms', {
-    method: 'POST',
-    form: {
-      UniqueName: uniqueName,
-      Type: 'group',
-      EmptyRoomTimeout: '5',
-      UnusedRoomTimeout: '10'
-    }
-  });
+  const form = {
+    UniqueName: uniqueName,
+    Type: 'group',
+    EmptyRoomTimeout: '5',
+    UnusedRoomTimeout: '10'
+  };
+  if (opts && opts.endsAt) {
+    const graceSeconds = 5 * 60;
+    const seconds = Math.ceil((opts.endsAt.getTime() - Date.now()) / 1000) + graceSeconds;
+    form.MaxParticipantDuration = String(Math.min(Math.max(seconds, 600), 86400));
+  }
+
+  const created = await twilioRequest('Rooms', { method: 'POST', form });
   return created.data;
 }
 

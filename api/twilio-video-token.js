@@ -1,20 +1,19 @@
 // POST /api/twilio-video-token
-// Body: { token, name }
+// Body: { token }
 //
 // Issues a short-lived Twilio Video Access Token for a patient joining their
-// own consultation. `token` is the opaque, unguessable meeting_token minted
-// by schedule_booking_meeting (see stripe-webhook.js) — it is the only
-// credential a patient ever needs, and it resolves to exactly one booking.
-// The join window is enforced here, server-side, independent of anything the
-// client claims: 10 minutes before the scheduled start through the end of
-// the booked duration.
+// own consultation. `token` is the opaque, unguessable meeting token from
+// their confirmation email — the only credential a patient ever needs, and
+// it resolves to exactly one paid booking. The join window is enforced here,
+// server-side, independent of the patient's own clock: 10 minutes before the
+// scheduled start through the end of the booked duration.
 
 const { callRpc } = require('./_supabase');
 const { isConfigured, buildVideoAccessToken, findOrCreateRoom } = require('./_twilio');
 
 const JOIN_WINDOW_BEFORE_MS = 10 * 60 * 1000;
 
-function escapeIdentity(str) {
+function safeIdentity(str) {
   return String(str || 'Patient').replace(/[^a-zA-Z0-9 ._-]/g, '').slice(0, 60) || 'Patient';
 }
 
@@ -29,25 +28,30 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
-  const meetingToken = (body.token || '').trim();
+  let body = req.body;
+  if (!body || typeof body === 'string') {
+    try { body = JSON.parse(body || '{}'); } catch (e) { body = {}; }
+  }
+  const meetingToken = String(body.token || '').trim();
   if (!meetingToken) {
     res.status(400).json({ error: 'Missing token' });
     return;
   }
 
   try {
-    const rows = await callRpc('get_booking_by_meeting_token', { p_token: meetingToken });
-    const booking = rows && rows[0];
+    const booking = await callRpc('get_consultation_by_token', { p_token: meetingToken });
     if (!booking || !booking.meeting_room_name) {
       res.status(404).json({ error: 'This consultation link is invalid or has expired.' });
       return;
     }
+    if (booking.booking_status === 'cancelled' || booking.booking_status === 'refunded') {
+      res.status(410).json({ error: 'This consultation was cancelled.', status: 'cancelled' });
+      return;
+    }
 
-    const scheduledAt = new Date(booking.meeting_scheduled_at);
-    const durationMs = (booking.meeting_duration_minutes || 30) * 60 * 1000;
-    const windowStart = scheduledAt.getTime() - JOIN_WINDOW_BEFORE_MS;
-    const windowEnd = scheduledAt.getTime() + durationMs;
+    const startsAt = new Date(booking.starts_at).getTime();
+    const windowStart = startsAt - JOIN_WINDOW_BEFORE_MS;
+    const windowEnd = startsAt + booking.duration_minutes * 60000;
     const now = Date.now();
 
     if (booking.meeting_status === 'ended' || now > windowEnd) {
@@ -56,14 +60,14 @@ module.exports = async (req, res) => {
     }
     if (now < windowStart) {
       res.status(403).json({
-        error: 'This consultation hasn\'t started yet. The link becomes active 10 minutes before your scheduled time.',
+        error: 'Your consultation room opens 10 minutes before your start time.',
         status: 'not_yet',
-        scheduledAt: booking.meeting_scheduled_at
+        opensAt: new Date(windowStart).toISOString()
       });
       return;
     }
 
-    const room = await findOrCreateRoom(booking.meeting_room_name);
+    const room = await findOrCreateRoom(booking.meeting_room_name, { endsAt: new Date(windowEnd) });
 
     if (booking.meeting_status !== 'active') {
       await callRpc('mark_booking_meeting_status', {
@@ -80,18 +84,17 @@ module.exports = async (req, res) => {
       }).catch(function () {});
     }
 
-    const identity = escapeIdentity(body.name || booking.full_name);
     const accessToken = buildVideoAccessToken({
-      identity,
+      identity: safeIdentity(booking.first_name) + ' (patient)',
       roomName: booking.meeting_room_name,
       ttlSeconds: Math.max(60, Math.ceil((windowEnd - now) / 1000))
     });
 
+    res.setHeader('Cache-Control', 'no-store');
     res.status(200).json({
       accessToken,
       roomName: booking.meeting_room_name,
-      endsAt: new Date(windowEnd).toISOString(),
-      reason: booking.reason
+      endsAt: new Date(windowEnd).toISOString()
     });
   } catch (err) {
     console.error('twilio-video-token: failed', err.message);
