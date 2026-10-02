@@ -52,47 +52,50 @@
       <div class="section-header">
         <div>
           <h1 class="page-title">Orders</h1>
-          <p class="page-subtitle"><span class="orders-live-dot"></span>Live consultation bookings and product orders from clinipausemd.com and drivanah.com.</p>
+          <p class="page-subtitle"><span class="orders-live-dot"></span>Shop orders in real time. Update fulfilment here and the customer sees it on the Track Order page.</p>
         </div>
-        <div class="header-actions"><a class="btn btn-secondary" href="#" id="refresh-orders">Refresh</a></div>
+        <div class="header-actions">
+          <a class="btn btn-secondary" href="#" id="export-orders">Export CSV</a>
+          <a class="btn btn-secondary" href="#" id="refresh-orders">Refresh</a>
+        </div>
       </div>
 
       <div class="kpi-strip">
-        <div class="kpi-card">
-          <div class="kpi-label">Paid (30 days)</div>
-          <div class="kpi-value" id="kpi-paid-count">–</div>
-          <div class="kpi-delta green"><span class="dot"></span><span id="kpi-paid-total">$0</span> collected</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Pending Payment</div>
-          <div class="kpi-value" id="kpi-pending-count">–</div>
-          <div class="kpi-delta amber"><span class="dot"></span>Not yet confirmed</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">CliniPauseMD.com</div>
-          <div class="kpi-value" id="kpi-site-clinipausemd">–</div>
-          <div class="kpi-delta blue"><span class="dot"></span>Paid orders</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">DrIvanah.com</div>
-          <div class="kpi-value" id="kpi-site-drivanah">–</div>
-          <div class="kpi-delta blue"><span class="dot"></span>Paid orders</div>
-        </div>
+        <div class="kpi-card"><div class="kpi-label">To fulfil</div><div class="kpi-value" id="kpi-tofulfil">–</div><div class="kpi-delta amber"><span class="dot"></span><span id="kpi-oldest">Nothing waiting</span></div></div>
+        <div class="kpi-card"><div class="kpi-label">In transit</div><div class="kpi-value" id="kpi-transit">–</div><div class="kpi-delta blue"><span class="dot"></span>Shipped or out for delivery</div></div>
+        <div class="kpi-card"><div class="kpi-label">Delivered (30 days)</div><div class="kpi-value" id="kpi-delivered">–</div><div class="kpi-delta green"><span class="dot"></span><span id="kpi-avgship">—</span></div></div>
+        <div class="kpi-card"><div class="kpi-label">Sales (30 days)</div><div class="kpi-value" id="kpi-sales">–</div><div class="kpi-delta green"><span class="dot"></span><span id="kpi-sales-count">0</span> paid orders</div></div>
       </div>
 
-      <div class="subnav-pills" id="order-filter-pills">
-        <span class="pill active" data-filter="all">All</span>
-        <span class="pill" data-filter="paid">Paid</span>
-        <span class="pill" data-filter="pending_payment">Pending</span>
-        <span class="pill" data-filter="booking">Consultations</span>
-        <span class="pill" data-filter="order">Product Orders</span>
+      <div class="od-toolbar">
+        <div class="subnav-pills" id="order-filter-pills">
+          <span class="pill active" data-filter="tofulfil">To fulfil</span>
+          <span class="pill" data-filter="transit">In transit</span>
+          <span class="pill" data-filter="delivered">Delivered</span>
+          <span class="pill" data-filter="returned">Returned</span>
+          <span class="pill" data-filter="unpaid">Unpaid / abandoned</span>
+          <span class="pill" data-filter="all">All</span>
+        </div>
+        <input type="search" id="order-search-inline" class="od-search" placeholder="Order #, name, email or tracking" autocomplete="off">
       </div>
 
-      <div class="card" style="padding:0;">
-        <div class="orders-table" id="orders-table">
-          <div class="orders-empty">Loading orders…</div>
-        </div>
+      <div class="card" style="padding:0;overflow-x:auto;">
+        <table class="od-table">
+          <thead><tr>
+            <th>Order</th><th>Customer</th><th>Items</th><th class="num">Total</th><th>Payment</th><th>Fulfilment</th><th>Last update</th><th>Placed</th>
+          </tr></thead>
+          <tbody id="orders-table"><tr><td colspan="8" class="orders-empty">Loading orders…</td></tr></tbody>
+        </table>
       </div>
+
+      <div class="od-overlay" id="od-overlay" hidden></div>
+      <aside class="od-drawer" id="od-drawer" aria-hidden="true" role="dialog" aria-label="Order details">
+        <div class="od-drawer-head">
+          <div><div class="od-eyebrow" id="od-eyebrow">Order</div><h2 id="od-title">—</h2></div>
+          <button type="button" class="od-close" id="od-close" aria-label="Close">&times;</button>
+        </div>
+        <div class="od-drawer-body" id="od-body"></div>
+      </aside>
 
     </main>
   </div>
