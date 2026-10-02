@@ -73,7 +73,11 @@
   }
 
   async function toggleActive(id, nextActive) {
-    await sb.from('store_products').update({ active: nextActive }).eq('id', id);
+    var res = await sb.from('store_products').update({ active: nextActive }).eq('id', id).select();
+    if (res.error || !res.data || !res.data.length) {
+      alert('Could not update this product — your session may not have permission. Please reload the page and try again.');
+      return;
+    }
     loadProducts();
   }
 

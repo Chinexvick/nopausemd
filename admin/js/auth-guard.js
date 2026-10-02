@@ -53,14 +53,14 @@
         return;
       }
 
-      window.CURRENT_ADMIN = {
+      var adminInfo = {
         email: me.email,
         roles: me.roles || [],
         permissions: me.permissions || [],
         isSuperAdmin: !!me.isSuperAdmin
       };
 
-      if (window.CURRENT_ADMIN.isSuperAdmin && superNavPlaceholder.parentNode) {
+      if (adminInfo.isSuperAdmin && superNavPlaceholder.parentNode) {
         superNavPlaceholder.parentNode.replaceChild(superNavGroup, superNavPlaceholder);
       }
 
@@ -68,9 +68,16 @@
       // the website's own database directly. Non-fatal if it fails — those
       // specific pages will show their own "unable to load" state, but the
       // rest of the dashboard still works.
+      //
+      // window.CURRENT_ADMIN is deliberately NOT set until this finishes.
+      // Every page script gates its data loading/saving on CURRENT_ADMIN
+      // existing — if it were set earlier, a page could run a write against
+      // `sb` before the bridge attaches a session to it, and that write
+      // would silently affect zero rows under RLS instead of failing loudly.
       var bridged = window.sb ? bridgeWebsiteSession(session.access_token) : Promise.resolve();
 
       return bridged.finally(function () {
+        window.CURRENT_ADMIN = adminInfo;
         revealDashboard(window.CURRENT_ADMIN);
       });
     }).catch(function (err) {

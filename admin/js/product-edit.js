@@ -119,11 +119,15 @@
     var res;
     if (productId) {
       payload.active = isActive;
-      res = await sb.from('store_products').update(payload).eq('id', productId);
+      // .select() matters here: without it, Supabase reports "success" even
+      // when row-level security silently excluded the row and zero rows
+      // were actually updated — this is exactly how a permissions problem
+      // can look like a successful save that quietly did nothing.
+      res = await sb.from('store_products').update(payload).eq('id', productId).select();
     } else {
       payload.slug = slugify(name) + '-' + Date.now().toString(36);
       payload.active = true;
-      res = await sb.from('store_products').insert(payload);
+      res = await sb.from('store_products').insert(payload).select();
     }
 
     saveBtn.disabled = false;
@@ -131,6 +135,11 @@
 
     if (res.error) {
       errorEl.textContent = res.error.message;
+      errorEl.style.display = 'block';
+      return;
+    }
+    if (!res.data || !res.data.length) {
+      errorEl.textContent = 'Nothing was saved — your session may not have permission to make this change. Please reload the page and try again.';
       errorEl.style.display = 'block';
       return;
     }
