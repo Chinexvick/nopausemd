@@ -19,7 +19,7 @@ const { callRpc } = require('./_supabase');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
-const ALLOWED_ORIGIN = /^https:\/\/clinipausemd-admin(-[a-z0-9-]+)?\.vercel\.app$/;
+const ALLOWED_ORIGIN = /^https:\/\/(admin\.clinipausemd\.com|clinipausemd-admin(-[a-z0-9-]+)?\.vercel\.app)$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const STATUSES = ['awaiting_fulfillment', 'processing', 'shipped', 'out_for_delivery', 'delivered', 'returned'];
 
@@ -229,7 +229,7 @@ async function sendWeeklyReport(force) {
       row('New newsletter subscribers', r.new_subscribers) +
       '</table><h3 style="font-size:15px;margin:22px 0 6px;">Team activity</h3><table style="width:100%;border-collapse:collapse;font-size:15px;">' + team + '</table>',
     ctaLabel: 'Open the dashboard',
-    ctaUrl: 'https://clinipausemd-admin.vercel.app/overview.html',
+    ctaUrl: 'https://admin.clinipausemd.com/overview.html',
     footerNote: 'Sent every Monday morning. Turn it off in Admin Settings.'
   });
   await sendBrandedEmail({ to: to.join(', '), subject: 'CliniPause weekly summary', html, text: 'Your CliniPause weekly summary is ready in the dashboard.' });

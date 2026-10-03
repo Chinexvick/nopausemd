@@ -12,7 +12,7 @@ const { handleConfirmedBooking } = require('./_consultations');
 
 module.exports.config = { api: { bodyParser: false } };
 
-const ADMIN_DASHBOARD_URL = 'https://clinipausemd-admin.vercel.app';
+const ADMIN_DASHBOARD_URL = 'https://admin.clinipausemd.com';
 
 function firstName(fullName) {
   var trimmed = (fullName || '').trim();

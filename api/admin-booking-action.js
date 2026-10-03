@@ -15,7 +15,7 @@ const { getBooking, prepareMeeting, sendPatientInvite, sendPatientCancellation }
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
-const ALLOWED_ORIGIN = /^https:\/\/clinipausemd-admin(-[a-z0-9-]+)?\.vercel\.app$/;
+const ALLOWED_ORIGIN = /^https:\/\/(admin\.clinipausemd\.com|clinipausemd-admin(-[a-z0-9-]+)?\.vercel\.app)$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function applyCors(req, res) {

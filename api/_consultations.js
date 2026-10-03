@@ -11,7 +11,7 @@ const { buildConsultationIcs } = require('./_ics');
 
 const CLINIC_TZ = 'America/New_York';
 const WEBSITE_URL = 'https://www.clinipausemd.com';
-const ADMIN_URL = 'https://clinipausemd-admin.vercel.app';
+const ADMIN_URL = 'https://admin.clinipausemd.com';
 const JOIN_OPENS_MINUTES_BEFORE = 10;
 const CLINICIAN = 'Dr. Ivanah Thomas';
 const PATIENT_FOOTER = "You're receiving this email because you booked a consultation at clinipausemd.com.";

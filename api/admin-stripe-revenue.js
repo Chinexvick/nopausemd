@@ -19,7 +19,7 @@ const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
 
 // Called cross-origin from the admin dashboard (a separate project); only
 // the dashboard's own origin is allowed. Auth is still checked below.
-const ALLOWED_ORIGIN = /^https:\/\/clinipausemd-admin(-[a-z0-9-]+)?\.vercel\.app$/;
+const ALLOWED_ORIGIN = /^https:\/\/(admin\.clinipausemd\.com|clinipausemd-admin(-[a-z0-9-]+)?\.vercel\.app)$/;
 function applyCors(req, res) {
   const origin = req.headers.origin || '';
   if (ALLOWED_ORIGIN.test(origin)) {
