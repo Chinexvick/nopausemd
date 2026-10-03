@@ -7,6 +7,11 @@
 //       Emails the newsletter (or, with test: true, only the sender).
 //   { action: 'send_report' }
 //       Emails the weekly summary to the notification recipients now.
+//   { action: 'send_staff_welcome', email, name, role, temporaryPassword, expiresAt, kind }
+//       Emails a new (or password-reset) staff member their login details in a
+//       branded message. Authorised with the caller's NoPauseMD token, not the
+//       website session: only someone who can manage staff may send it, and only
+//       to an address that is already on the staff list.
 //
 // GET ?job=weekly_report, Authorization: Bearer <CRON_SECRET>
 //   Called every Monday morning by a scheduled database job.
@@ -19,6 +24,8 @@ const { callRpc } = require('./_supabase');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+const NOPAUSE_BACKEND_URL = process.env.NOPAUSE_BACKEND_URL || 'https://clinipausemd-admin-backend.onrender.com';
+const DASHBOARD_URL = process.env.ADMIN_DASHBOARD_URL || 'https://admin.clinipausemd.com';
 const ALLOWED_ORIGIN = /^https:\/\/(admin\.clinipausemd\.com|clinipausemd-admin(-[a-z0-9-]+)?\.vercel\.app)$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const STATUSES = ['awaiting_fulfillment', 'processing', 'shipped', 'out_for_delivery', 'delivered', 'returned'];
@@ -200,6 +207,110 @@ async function sendBroadcast(req, res, accessToken) {
   res.status(200).json({ sent, failed });
 }
 
+
+const ROLE_LABEL = { admin: 'Administrator', clinical_lead: 'Clinical Lead', clinician: 'Clinician' };
+const ROLE_BLURB = {
+  admin: 'You will have full access to the dashboard, including managing the team.',
+  clinical_lead: 'You will be able to assign and oversee consultations and manage clinical content.',
+  clinician: 'You will see the consultations assigned to you and can reply and take video visits.'
+};
+
+async function nopauseFetch(path, token) {
+  const ctl = new AbortController();
+  const timer = setTimeout(function () { ctl.abort(); }, 25000);
+  try {
+    return await fetch(NOPAUSE_BACKEND_URL + path, { headers: { Authorization: 'Bearer ' + token }, signal: ctl.signal });
+  } finally { clearTimeout(timer); }
+}
+
+async function sendStaffWelcome(req, res, accessToken) {
+  if (!accessToken) { res.status(401).json({ error: 'Not signed in' }); return; }
+  const b = req.body || {};
+
+  // 1. The caller must be a real, current staff manager (checked by the app backend itself).
+  let me;
+  try {
+    const meRes = await nopauseFetch('/v1/me', accessToken);
+    if (!meRes.ok) { res.status(401).json({ error: 'Not a valid staff session' }); return; }
+    me = await meRes.json();
+  } catch (e) { res.status(502).json({ error: 'Could not reach the app server to verify you.' }); return; }
+  const mayManage = me && !me.mustChangePassword && (me.isSuperAdmin === true || (Array.isArray(me.permissions) && me.permissions.indexOf('staff.manage') > -1));
+  if (!mayManage) { res.status(403).json({ error: 'Only someone who manages staff can send login details.' }); return; }
+
+  // 2. Validate what we are about to email.
+  const email = String(b.email || '').trim().toLowerCase();
+  const role = String(b.role || '');
+  const password = String(b.temporaryPassword || '');
+  const kind = b.kind === 'reset' ? 'reset' : 'welcome';
+  const name = String(b.name || '').trim().slice(0, 80);
+  if (!/^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/.test(email)) { res.status(400).json({ error: 'Invalid email address' }); return; }
+  if (!ROLE_LABEL[role]) { res.status(400).json({ error: 'Invalid role' }); return; }
+  if (password.length < 12 || password.length > 72 || /[\r\n]/.test(password)) { res.status(400).json({ error: 'Invalid password' }); return; }
+
+  // 3. It can only go to someone who is actually on the staff list, so this can't be used to mail arbitrary addresses.
+  try {
+    const listRes = await nopauseFetch('/v1/staff', accessToken);
+    const list = listRes.ok ? ((await listRes.json()).staff || []) : [];
+    if (!list.some(function (m) { return String(m.email || '').toLowerCase() === email; })) {
+      res.status(400).json({ error: 'That address is not on the staff list.' });
+      return;
+    }
+  } catch (e) { res.status(502).json({ error: 'Could not check the staff list.' }); return; }
+
+  // 4. Send.
+  let hours = 72;
+  if (b.expiresAt) {
+    const ms = new Date(b.expiresAt).getTime() - Date.now();
+    if (ms > 0) hours = Math.max(1, Math.round(ms / 3600000));
+  }
+  const loginUrl = DASHBOARD_URL + '/login.html';
+  const first = name ? esc(name.split(' ')[0]) : 'there';
+  const box = 'background:#f3f8f1;border:1px solid #cfe3c8;border-radius:12px;padding:16px 18px;margin:18px 0;';
+  const mono = 'font-family:Menlo,Consolas,monospace;font-size:16px;font-weight:700;letter-spacing:.4px;color:#0c211b;word-break:break-all;';
+  const html = buildBrandedEmailHtml({
+    eyebrow: kind === 'reset' ? 'Password reset' : 'Welcome to the team',
+    heading: kind === 'reset' ? 'Your new temporary password' : 'Your CliniPause dashboard account is ready',
+    bodyHtml:
+      '<p style="margin:0 0 12px;">Hi ' + first + ',</p>' +
+      '<p style="margin:0 0 12px;">' + (kind === 'reset'
+        ? 'A new temporary password has been set for your CliniPause dashboard account.'
+        : 'You have been added to the CliniPause care team as <strong>' + esc(ROLE_LABEL[role]) + '</strong>. ' + esc(ROLE_BLURB[role])) + '</p>' +
+      '<div style="' + box + '">' +
+        '<div style="font-size:12px;color:#5b6676;text-transform:uppercase;letter-spacing:.06em;">Your email</div>' +
+        '<div style="' + mono + 'margin-bottom:12px;">' + esc(email) + '</div>' +
+        '<div style="font-size:12px;color:#5b6676;text-transform:uppercase;letter-spacing:.06em;">Temporary password</div>' +
+        '<div style="' + mono + '">' + esc(password) + '</div>' +
+      '</div>' +
+      '<p style="margin:0 0 6px;"><strong>To get started</strong></p>' +
+      '<ol style="margin:0 0 12px;padding-left:20px;line-height:1.7;">' +
+        '<li>Open the dashboard with the button below.</li>' +
+        '<li>Sign in with your email and the temporary password above.</li>' +
+        '<li>You will be asked to choose your own password (at least 12 characters, with a letter and a number or symbol).</li>' +
+        '<li>Then sign in again with your new password to reach your dashboard.</li>' +
+      '</ol>',
+    ctaLabel: 'Sign in to the dashboard',
+    ctaUrl: loginUrl,
+    afterCtaHtml:
+      '<p style="margin:18px 0 0;font-size:13px;color:#5b6676;line-height:1.6;">This temporary password works only until you choose your own, and expires in about ' + hours + ' hours. ' +
+      'If it expires, ask an administrator to send you a new one. Never share your password with anyone. Once you have changed it, delete this email.</p>' +
+      '<p style="margin:10px 0 0;font-size:12px;color:#8a93a3;">Button not working? Copy this address into your browser: ' + esc(loginUrl) + '</p>',
+    footerNote: 'You are receiving this because an administrator created a CliniPause dashboard account for you. If this was not expected, please ignore this email and let us know.'
+  });
+  const text = 'Hi ' + (name ? name.split(' ')[0] : 'there') + ',\n\n' +
+    (kind === 'reset' ? 'A new temporary password has been set for your CliniPause dashboard account.\n\n' : 'You have been added to the CliniPause care team as ' + ROLE_LABEL[role] + '.\n\n') +
+    'Email: ' + email + '\nTemporary password: ' + password + '\n\n' +
+    'Sign in: ' + loginUrl + '\nYou will be asked to choose your own password, then sign in again.\n' +
+    'This temporary password expires in about ' + hours + ' hours. Never share your password.\n';
+  try {
+    await sendBrandedEmail({ to: email, subject: kind === 'reset' ? 'Your new CliniPause temporary password' : 'Your CliniPause dashboard login', html, text });
+  } catch (err) {
+    console.error('admin-actions: staff welcome email failed', err.message);
+    res.status(502).json({ error: 'The email could not be sent.' });
+    return;
+  }
+  res.status(200).json({ sent: true });
+}
+
 function money(cents) {
   return '$' + (Number(cents || 0) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -257,12 +368,22 @@ module.exports = async (req, res) => {
   }
   if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
 
+  const action = (req.body || {}).action;
+
+  // Staff login emails are authorised against the NoPauseMD backend (who may manage staff), not the website session.
+  if (action === 'send_staff_welcome') {
+    try { await sendStaffWelcome(req, res, accessToken); } catch (err) {
+      console.error('admin-actions: staff welcome failed', err.message);
+      if (!res.headersSent) res.status(500).json({ error: 'Something went wrong.' });
+    }
+    return;
+  }
+
   if (!(await isStoreAdmin(accessToken).catch(() => false))) {
     res.status(403).json({ error: 'Staff access required' });
     return;
   }
 
-  const action = (req.body || {}).action;
   try {
     if (action === 'update_tracking') return await updateTracking(req, res, accessToken);
     if (action === 'send_broadcast') return await sendBroadcast(req, res, accessToken);

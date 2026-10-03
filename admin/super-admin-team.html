@@ -68,20 +68,10 @@
       </div>
 
       <div id="team-body">
-        <div class="card">
-          <div class="card-title-sm">Adding a new team member</div>
-          <p class="body-text">To add a new team member, they must first be created as a user in the Supabase Dashboard (Authentication &rarr; Users), then added here as a store admin. This dashboard cannot create Supabase Auth users directly — it has no service-role access from the browser.</p>
-        </div>
+        <div id="staff-manager"></div>
 
+        <h3 class="card-title-sm" style="margin:24px 0 8px;">Website data access</h3>
         <div id="team-list"><div class="orders-empty">Loading…</div></div>
-      </div>
-
-      <h3 class="card-title-sm" style="margin:24px 0 12px;">NoPauseMD App Staff</h3>
-            <div class="table-card">
-        <table class="data-table">
-          <thead><tr><th>Email</th><th>Roles</th><th>Status</th><th>Actions</th></tr></thead>
-          <tbody id="app-staff-body"><tr><td colspan="4" class="orders-empty">Loading…</td></tr></tbody>
-        </table>
       </div>
 
 </main>
@@ -93,7 +83,7 @@
 <script src="js/auth-guard.js"></script>
 <script src="js/nav-badges.js"></script>
 <script src="js/super-admin-team.js"></script>
-<script src="js/super-admin-app-staff.js"></script>
+<script src="js/staff-manager.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

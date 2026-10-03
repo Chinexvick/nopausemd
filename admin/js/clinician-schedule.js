@@ -132,13 +132,16 @@
           if (states.some(function (x) { return !/^([A-Z]{2}|ALL)$/.test(x); })) { msg.textContent = 'Use two-letter state codes, or ALL.'; msg.className = 'od-msg err'; return; }
           var body = { displayName: f.displayName.value.trim(), credentials: f.credentials.value.trim() || undefined, specialty: f.specialty.value.trim() || undefined,
             bio: f.bio.value.trim() || undefined, acceptingPatients: f.accepting.checked, licensedStates: states };
-          if (isNew && f.email.value.trim()) body.email = f.email.value.trim();
+          if (isNew && f.email.value.trim()) { body.email = f.email.value.trim(); body.method = 'password'; }
           btn.disabled = true; msg.textContent = '';
           NB.api(isNew ? '/v1/clinicians' : '/v1/clinicians/' + c.id, { method: isNew ? 'POST' : 'PATCH', body: JSON.stringify(body) }).then(function (d) {
             close();
-            if (d && d.temporaryPassword) {
-              modal('<h3>Share this temporary password</h3><p class="od-sub">It could not be emailed and is shown only once. They must change it when they first sign in.</p><p style="font-size:18px;font-weight:700;letter-spacing:.5px;user-select:all;">' + esc(d.temporaryPassword) + '</p><div class="cx-modal-foot"><button type="button" class="btn btn-primary" data-close>Done</button></div>');
-            } else toast(isNew ? 'Clinician added' : 'Saved', isNew && body.email ? (d && d.emailed ? 'A temporary password was emailed to ' + body.email + '.' : 'Account ready.') : '', 'ok');
+            if (d && d.temporaryPassword && window.StaffOnboarding) {
+              var pw = d.temporaryPassword, to = body.email;
+              window.StaffOnboarding.sendWelcome({ email: to, name: body.displayName, role: 'clinician', temporaryPassword: pw, expiresAt: d.temporaryPasswordExpiresAt, kind: 'welcome' })
+                .then(function () { toast('Clinician added', 'Login details were emailed to ' + to + '.', 'ok'); })
+                .catch(function (err) { window.StaffOnboarding.showPassword(to, pw, 'The email could not be sent (' + err.message + ').'); });
+            } else toast(isNew ? 'Clinician added' : 'Saved', isNew && body.email ? 'They already had an account, so the clinician role was added.' : '', 'ok');
             loadClinicians();
           }).catch(function (err) { btn.disabled = false; msg.textContent = err.message; msg.className = 'od-msg err'; });
         });

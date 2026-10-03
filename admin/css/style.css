@@ -1100,7 +1100,7 @@ textarea.form-control { resize: vertical; min-height: 80px; }
 .od-progress.returned { justify-content: center; color: #a12626; font-weight: 700; }
 .od-form { display: flex; flex-direction: column; gap: 10px; }
 .od-form label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; }
-.od-form select, .od-form input[type=text], .od-form input:not([type]) { border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font: 13px var(--font-body); font-weight: 400; }
+.od-form select, .od-form input[type=text], .od-form input[type=email], .od-form input[type=datetime-local], .od-form input:not([type]) { border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font: 13px var(--font-body); font-weight: 400; }
 .od-form .od-check { flex-direction: row; align-items: center; gap: 8px; font-weight: 500; }
 .od-form-foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
 .od-msg { font-size: 12px; }
