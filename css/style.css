@@ -576,10 +576,9 @@ ul { margin: 0; padding: 0; }
     cursor: pointer;
     color: var(--black);
   }
-  /* The portal button stays in the bar on phones, compact, next to the menu toggle. */
-  .nav-cta { order: 2; margin-left: auto; margin-right: 10px; padding: 9px 14px; font-size: 13px; gap: 6px; }
-  .nav-cta .portal-ico { width: 15px; height: 15px; }
-  .nav-toggle { display: flex; order: 3; }
+  /* On phones the portal button lives inside the slide-out menu only. */
+  .nav-cta { display: none; }
+  .nav-toggle { display: flex; }
   .nav-links .nav-links-portal { display: block; width: 100%; margin-top: 8px; }
   .nav-links .nav-links-portal a { display: flex; justify-content: center; color: #fff; font-size: 16px; }
   .nav-links .nav-links-portal a::after { display: none; }
@@ -2095,8 +2094,3 @@ ul { margin: 0; padding: 0; }
 /* Wellness Portal buttons: the in-menu copy is for phones only */
 @media (min-width: 961px) { .nav-links .nav-links-portal { display: none; } }
 .btn .portal-ico { flex-shrink: 0; }
-@media (max-width: 400px) {
-  .nav-cta { padding: 8px 11px; font-size: 12.5px; }
-  .logo-text { font-size: 19px; }
-}
-@media (max-width: 350px) { .logo-text { display: none; } }
