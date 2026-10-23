@@ -35,22 +35,16 @@ When an order is paid, the customer gets a branded confirmation email with their
 ### Order tracking
 The **Track Order** page lets a customer enter their order number and the email address they ordered with. Both have to match, so nobody can look up someone else's order by guessing numbers. The page shows an animated delivery progress bar (Confirmed → Packing → Shipped → Out for delivery → Delivered) with the time each step happened, plus the carrier and tracking number once it ships. Every status change the team makes in the dashboard is logged automatically with the time and who made it.
 
-### Booking a consultation
-The booking window walks a patient through three steps:
+### Wellness Portal
+Consultation booking has been removed from the website, because clinicians need to be licensed in each patient's state. Every page now points visitors to the **Wellness Portal** instead: a button in the menu (desktop and phone), in the page banners and in the footer. The chat assistant explains the same thing. The booking code on the server still exists for people who booked earlier, so their reminders, video links and the dashboard's booking screens keep working, but the checkout endpoint no longer accepts new bookings.
 
-1. **Their details**: name, email, phone and what they'd like to discuss.
-2. **Their session**: 30 minutes or 1 hour (each priced from its own product in the dashboard), then a date and time. They see the clinic's time (Eastern) and their own local time.
-3. **Confirm and pay**: a secure Stripe checkout. If a session is ever priced at $0.00, the booking is confirmed straight away without a payment step.
-
-All the booking rules are enforced on the server, not just in the browser: weekdays only, the clinic's time slots, a full hour must fit for 1-hour sessions, at least an hour's notice, no booking on days the clinic has closed, and no overlapping bookings even if two people book at the same moment. If someone abandons checkout, their slot is held briefly and then released for others.
-
-### After a booking is confirmed
+### Earlier bookings
 - The patient gets a confirmation email with the date, time, length, topic, their personal video link and a calendar invite they can add with one tap.
 - The care team gets a "new booking" email.
 - **20 minutes before the session**, the patient and the care team each get their own reminder. The patient's has their join link and a short checklist. The team's has the patient's details and a "Join as clinician" button.
 - If the team reschedules, the patient is emailed the new time and their calendar entry updates itself. If the team cancels, the patient is told, and the entry is removed from their calendar.
 
-### Video consultations
+### Video consultations (earlier bookings)
 Each paid booking gets its own private video room. The patient's link is a long random code that only works for that one booking. The **waiting room** page shows the session details, counts down to when the room opens (10 minutes before the start), lets the patient test their camera and microphone, and opens the Join button automatically when it's time. The call shows a countdown and ends automatically when the booked time is up. This is enforced by the video service itself, not just the page, so nobody stays connected past their session.
 
 The mobile app has its own separate video calling. This website flow is independent of it.

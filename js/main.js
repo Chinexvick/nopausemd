@@ -33,9 +33,6 @@ function startCheckout(payload) {
   if (payload && payload.kind === 'order' && st.shop_enabled === false) {
     return Promise.reject(new Error('Our shop is temporarily closed for orders. Please check back soon.'));
   }
-  if (payload && payload.kind === 'booking' && st.booking_enabled === false) {
-    return Promise.reject(new Error('Online booking is paused right now. Please email info@clinipause.com to arrange a consultation.'));
-  }
   return fetch('/api/create-checkout-session', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -95,7 +92,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
   initSiteSettings();
   initCart();
-  initBookingModal();
   initShopProducts();
   initHomeProductsTeaser();
   showPaymentReturnBanner();
@@ -135,16 +131,6 @@ function initSiteSettings() {
       ['chat-bubble', 'chat-panel'].forEach(function (id) { var n = document.getElementById(id); if (n) n.remove(); });
     }
 
-    if (st.booking_enabled === false) {
-      document.addEventListener('click', function (e) {
-        if (!e.target.closest('[data-book-open]')) return;
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        alert('Online booking is paused right now. Please email info@clinipause.com and our team will arrange your consultation.');
-      }, true);
-      var overlay = document.querySelector('.booking-overlay.open');
-      if (overlay) overlay.classList.remove('open');
-    }
   }).catch(function () { /* settings are optional; the site works with defaults */ });
 }
 
@@ -241,19 +227,16 @@ function initParallax() {
    ========================================================= */
 function showPaymentReturnBanner() {
   var params = new URLSearchParams(window.location.search);
-  if (!params.has('paid') && !params.has('canceled') && !params.has('booked')) return;
+  if (!params.has('paid') && !params.has('canceled')) return;
 
   var overlay = document.createElement('div');
   overlay.className = 'booking-overlay open';
-  var booked = params.has('booked');
-  var paid = params.has('paid') || booked;
+  var paid = params.has('paid');
 
-  var title = booked ? "You're Booked!" : (paid ? 'Payment Successful!' : 'Checkout Canceled');
-  var message = booked
-    ? "Your consultation is confirmed. We've emailed you a confirmation with a calendar invite and your personal video link — if you don't see it in a few minutes, please check your spam folder."
-    : (paid
-      ? "Thank you — your order is confirmed. A receipt has been sent to your email, and we'll be in touch with any next steps."
-      : 'No payment was taken, and your time slot has been released. You can pick up where you left off any time.');
+  var title = paid ? 'Payment Successful!' : 'Checkout Canceled';
+  var message = paid
+    ? "Thank you — your order is confirmed. A receipt has been sent to your email, and we'll be in touch with any next steps."
+    : 'No payment was taken. You can pick up where you left off any time.';
 
   overlay.innerHTML =
     '<div class="booking-modal" role="dialog" aria-modal="true">' +
@@ -285,482 +268,6 @@ function showPaymentReturnBanner() {
   url.searchParams.delete('booked');
   url.searchParams.delete('booking');
   window.history.replaceState({}, '', url.pathname + url.search);
-}
-
-/* =========================================================
-   Booking Modal — Details -> Length, Date & Time -> Confirm & Pay
-   Every rule (weekdays, valid slots, a full hour fitting for 60-minute
-   sessions, 1 hour minimum notice, closed days, overlaps, price) is
-   enforced again by create_consultation_booking in the database — what
-   the modal shows is a convenience, never the source of truth. Paid
-   bookings are only confirmed by the Stripe webhook; $0.00 sessions are
-   confirmed server-side without Stripe.
-   ========================================================= */
-var CLINIC_TZ = 'America/New_York';
-var BOOKING_MIN_NOTICE_MINUTES = 60;
-var BOOKING_TIME_SLOTS = ['9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM',
-  '1:00 PM', '1:30 PM', '2:00 PM', '2:30 PM', '3:00 PM', '3:30 PM', '4:00 PM'];
-
-function slotMinutes(label) {
-  var m = /^(\d{1,2}):(\d{2}) (AM|PM)$/.exec(label);
-  var h = parseInt(m[1], 10) % 12 + (m[3] === 'PM' ? 12 : 0);
-  return h * 60 + parseInt(m[2], 10);
-}
-
-function minutesToLabel(total) {
-  var h = Math.floor(total / 60), mm = total % 60;
-  return ((h % 12) || 12) + ':' + String(mm).padStart(2, '0') + ' ' + (h >= 12 ? 'PM' : 'AM');
-}
-
-function clinicWallClock(date) {
-  var parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: CLINIC_TZ, year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
-  }).formatToParts(date);
-  var get = function (type) { return (parts.find(function (p) { return p.type === type; }) || {}).value; };
-  return {
-    date: get('year') + '-' + get('month') + '-' + get('day'),
-    minutes: parseInt(get('hour'), 10) * 60 + parseInt(get('minute'), 10),
-    utcMs: Date.UTC(+get('year'), +get('month') - 1, +get('day'), +get('hour'), +get('minute'))
-  };
-}
-
-// Clinic wall-clock date + slot label -> the real instant (DST-safe).
-function clinicSlotToDate(dateStr, label) {
-  var p = dateStr.split('-').map(Number);
-  var mins = slotMinutes(label);
-  var target = Date.UTC(p[0], p[1] - 1, p[2], Math.floor(mins / 60), mins % 60);
-  var guess = target;
-  for (var i = 0; i < 2; i++) guess = target - (clinicWallClock(new Date(guess)).utcMs - guess);
-  return new Date(guess);
-}
-
-function visitorIsInClinicTz() {
-  try { return Intl.DateTimeFormat().resolvedOptions().timeZone === CLINIC_TZ; } catch (e) { return true; }
-}
-
-function initBookingModal() {
-  var triggers = document.querySelectorAll('[data-book-open]');
-  if (!triggers.length) return;
-
-  // Prices come live from the two consultation products in the admin
-  // dashboard; null means "still loading".
-  var prices = { 30: null, 60: null };
-  supabaseSelect('store_products', 'select=slug,price_cents&slug=in.(video-consultation,video-consultation-60)')
-    .then(function (rows) {
-      (rows || []).forEach(function (r) {
-        if (r.slug === 'video-consultation') prices[30] = r.price_cents;
-        if (r.slug === 'video-consultation-60') prices[60] = r.price_cents;
-      });
-      if (document.getElementById('booking-durations')) renderDurations();
-    })
-    .catch(function () { /* cards show "See price at checkout" */ });
-
-  var blockedByMonth = {};
-  var state;
-  var monthCursor;
-
-  var overlay = document.createElement('div');
-  overlay.className = 'booking-overlay';
-  overlay.id = 'book-consultation';
-  overlay.innerHTML =
-    '<div class="booking-modal" role="dialog" aria-modal="true" aria-labelledby="booking-title">' +
-      '<button type="button" class="booking-close" data-book-close aria-label="Close">&times;</button>' +
-      '<div class="booking-steps"><span class="s1"></span><span class="s2"></span><span class="s3"></span></div>' +
-      '<div class="booking-panels"></div>' +
-    '</div>';
-  document.body.appendChild(overlay);
-
-  var panels = overlay.querySelector('.booking-panels');
-  var stepEls = overlay.querySelectorAll('.booking-steps span');
-
-  function setActiveStep(n) {
-    stepEls.forEach(function (el, i) { el.classList.toggle('active', i < n); });
-    overlay.querySelector('.booking-modal').scrollIntoView({ block: 'start' });
-  }
-
-  function open() {
-    state = { duration: 30, date: null, time: null, takenSlots: [], details: null };
-    monthCursor = new Date();
-    monthCursor.setDate(1);
-    renderStep1();
-    overlay.classList.add('open');
-    document.body.style.overflow = 'hidden';
-  }
-
-  function close() {
-    overlay.classList.remove('open');
-    document.body.style.overflow = '';
-  }
-
-  triggers.forEach(function (t) {
-    t.addEventListener('click', function (e) {
-      e.preventDefault();
-      open();
-    });
-  });
-
-  overlay.addEventListener('click', function (e) {
-    if (e.target === overlay || e.target.hasAttribute('data-book-close')) close();
-  });
-
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && overlay.classList.contains('open')) close();
-  });
-
-  function priceLabel(duration) {
-    var cents = prices[duration];
-    if (cents == null) return '';
-    return cents === 0 ? 'Complimentary' : money(cents);
-  }
-
-  /* ---------- Step 1: Your details ---------- */
-  var REASONS = ['Perimenopause / Menopause symptoms', 'Hormone therapy', 'Weight management',
-    'Peptides', 'Aesthetics', 'General wellness consultation'];
-
-  function renderStep1() {
-    setActiveStep(1);
-    var prefill = state.details || {};
-    panels.innerHTML =
-      '<p class="booking-eyebrow">Step 1 of 3</p>' +
-      '<h3 class="booking-title" id="booking-title">Book a Consultation</h3>' +
-      '<p class="booking-sub">Tell us a bit about you so Dr. Thomas\' team can prepare for your visit.</p>' +
-      '<form id="booking-form-1" novalidate>' +
-        '<div class="booking-row-2">' +
-          '<div class="booking-field"><label for="bk-name">Full name</label><input id="bk-name" type="text" name="name" autocomplete="name" maxlength="200" required value="' + escapeHtml(prefill.name || '') + '"></div>' +
-          '<div class="booking-field"><label for="bk-phone">Phone</label><input id="bk-phone" type="tel" name="phone" autocomplete="tel" maxlength="40" required value="' + escapeHtml(prefill.phone || '') + '"></div>' +
-        '</div>' +
-        '<div class="booking-field"><label for="bk-email">Email</label><input id="bk-email" type="email" name="email" autocomplete="email" maxlength="254" required value="' + escapeHtml(prefill.email || '') + '"></div>' +
-        '<div class="booking-field"><label for="bk-reason">What would you like to discuss?</label>' +
-          '<select id="bk-reason" name="reason">' +
-            REASONS.map(function (r) {
-              return '<option' + (prefill.reason === r ? ' selected' : '') + '>' + escapeHtml(r) + '</option>';
-            }).join('') +
-          '</select>' +
-        '</div>' +
-        '<p class="booking-error" id="booking-error-1">Please fill in your name, a valid email, and your phone number.</p>' +
-        '<div class="booking-actions" style="justify-content:flex-end;">' +
-          '<button type="submit" class="btn btn-primary">Continue</button>' +
-        '</div>' +
-      '</form>';
-
-    document.getElementById('booking-form-1').addEventListener('submit', function (e) {
-      e.preventDefault();
-      var fd = new FormData(e.target);
-      var details = {
-        name: (fd.get('name') || '').trim(),
-        email: (fd.get('email') || '').trim(),
-        phone: (fd.get('phone') || '').trim(),
-        reason: fd.get('reason')
-      };
-      if (!details.name || !details.phone || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(details.email)) {
-        document.getElementById('booking-error-1').classList.add('show');
-        return;
-      }
-      state.details = details;
-      renderStep2();
-    });
-  }
-
-  /* ---------- Step 2: Length, date + time ---------- */
-  function renderStep2() {
-    setActiveStep(2);
-    panels.innerHTML =
-      '<p class="booking-eyebrow">Step 2 of 3</p>' +
-      '<h3 class="booking-title" id="booking-title">Choose Your Session</h3>' +
-      '<p class="booking-sub">Pick a length, then a day and time that suits you.</p>' +
-      '<span class="booking-section-label">Session length</span>' +
-      '<div class="booking-durations" id="booking-durations" role="radiogroup" aria-label="Session length"></div>' +
-      '<span class="booking-section-label">Date</span>' +
-      '<div class="booking-calendar-head">' +
-        '<button type="button" id="cal-prev" aria-label="Previous month">&lsaquo;</button>' +
-        '<span id="cal-label"></span>' +
-        '<button type="button" id="cal-next" aria-label="Next month">&rsaquo;</button>' +
-      '</div>' +
-      '<div class="booking-calendar-grid" id="cal-grid"></div>' +
-      '<div id="slot-wrap" style="display:none;">' +
-        '<span class="booking-section-label">Available times <span class="booking-tz">Eastern Time (ET)</span></span>' +
-        '<div class="booking-slots" id="slot-grid"></div>' +
-        '<p class="booking-local-time" id="slot-local"></p>' +
-      '</div>' +
-      '<p class="booking-error" id="booking-error-2">Please choose a date and a time.</p>' +
-      '<div class="booking-actions">' +
-        '<button type="button" class="booking-back" id="step2-back">&larr; Back</button>' +
-        '<button type="button" class="btn btn-primary" id="step2-continue">Continue</button>' +
-      '</div>';
-
-    document.getElementById('step2-back').addEventListener('click', renderStep1);
-    document.getElementById('cal-prev').addEventListener('click', function () {
-      monthCursor.setMonth(monthCursor.getMonth() - 1);
-      renderCalendar();
-    });
-    document.getElementById('cal-next').addEventListener('click', function () {
-      monthCursor.setMonth(monthCursor.getMonth() + 1);
-      renderCalendar();
-    });
-    document.getElementById('step2-continue').addEventListener('click', function () {
-      if (!state.date || !state.time) {
-        document.getElementById('booking-error-2').classList.add('show');
-        return;
-      }
-      renderStep3();
-    });
-
-    renderDurations();
-    renderCalendar();
-    if (state.date) loadSlotsForDate(state.date);
-  }
-
-  function renderDurations() {
-    var wrap = document.getElementById('booking-durations');
-    if (!wrap) return;
-    var options = [
-      { minutes: 30, title: '30 minutes', desc: 'Focused visit for one main concern or a follow-up.' },
-      { minutes: 60, title: '1 hour', desc: 'In-depth review of symptoms, history, and a full plan.' }
-    ];
-    wrap.innerHTML = options.map(function (o) {
-      var selected = state.duration === o.minutes;
-      var price = priceLabel(o.minutes);
-      return '<button type="button" class="booking-duration' + (selected ? ' selected' : '') + '" role="radio" aria-checked="' + selected + '" data-duration="' + o.minutes + '">' +
-        '<span class="d-length">' + o.title + '</span>' +
-        '<span class="d-price">' + (price || '&nbsp;') + '</span>' +
-        '<span class="d-desc">' + o.desc + '</span>' +
-      '</button>';
-    }).join('');
-
-    wrap.querySelectorAll('[data-duration]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var next = parseInt(btn.getAttribute('data-duration'), 10);
-        if (next === state.duration) return;
-        state.duration = next;
-        renderDurations();
-        if (state.date) renderSlots();
-      });
-    });
-  }
-
-  function toDateStr(y, m, d) {
-    return y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
-  }
-
-  function monthKey(y, m) { return y + '-' + m; }
-
-  function loadBlockedDates(y, m) {
-    var key = monthKey(y, m);
-    if (blockedByMonth[key]) return Promise.resolve(blockedByMonth[key]);
-    var from = toDateStr(y, m, 1);
-    var to = toDateStr(y, m, new Date(y, m + 1, 0).getDate());
-    return supabaseRpc('list_blocked_dates', { p_from: from, p_to: to })
-      .then(function (rows) {
-        blockedByMonth[key] = (rows || []).map(function (r) { return r.blocked_date || r; });
-        return blockedByMonth[key];
-      })
-      .catch(function () { return []; });
-  }
-
-  function renderCalendar() {
-    var y = monthCursor.getFullYear(), m = monthCursor.getMonth();
-    var monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-    document.getElementById('cal-label').textContent = monthNames[m] + ' ' + y;
-
-    var clinicToday = clinicWallClock(new Date()).date;
-    var todayParts = clinicToday.split('-').map(Number);
-    document.getElementById('cal-prev').disabled = (y < todayParts[0]) || (y === todayParts[0] && m <= todayParts[1] - 1);
-
-    var blocked = blockedByMonth[monthKey(y, m)] || [];
-    var grid = document.getElementById('cal-grid');
-    var html = '';
-    ['S','M','T','W','T','F','S'].forEach(function (d) { html += '<div class="dow">' + d + '</div>'; });
-
-    var firstDay = new Date(y, m, 1).getDay();
-    var daysInMonth = new Date(y, m + 1, 0).getDate();
-    for (var i = 0; i < firstDay; i++) html += '<button type="button" class="booking-day empty" disabled></button>';
-
-    for (var d = 1; d <= daysInMonth; d++) {
-      var dateStr = toDateStr(y, m, d);
-      var dow = new Date(y, m, d).getDay();
-      var isClosed = blocked.indexOf(dateStr) > -1;
-      var disabled = dateStr < clinicToday || dow === 0 || dow === 6 || isClosed;
-      var selected = state.date === dateStr;
-      html += '<button type="button" class="booking-day' + (selected ? ' selected' : '') + (isClosed ? ' closed' : '') + '" data-date="' + dateStr + '"' +
-        (disabled ? ' disabled' : '') + (isClosed ? ' title="Clinic closed"' : '') + '>' + d + '</button>';
-    }
-    grid.innerHTML = html;
-
-    grid.querySelectorAll('.booking-day[data-date]:not(:disabled)').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        state.date = btn.getAttribute('data-date');
-        state.time = null;
-        renderCalendar();
-        loadSlotsForDate(state.date);
-      });
-    });
-
-    if (!blockedByMonth[monthKey(y, m)]) {
-      loadBlockedDates(y, m).then(function () {
-        if (document.getElementById('cal-grid') && monthCursor.getFullYear() === y && monthCursor.getMonth() === m) renderCalendar();
-      });
-    }
-  }
-
-  function loadSlotsForDate(dateStr) {
-    var wrap = document.getElementById('slot-wrap');
-    var grid = document.getElementById('slot-grid');
-    wrap.style.display = 'block';
-    grid.innerHTML = '<p class="booking-slots-msg">Checking availability…</p>';
-
-    supabaseRpc('list_taken_slots', { p_site: STOREFRONT_SITE, p_date: dateStr })
-      .then(function (rows) {
-        if (state.date !== dateStr) return;
-        state.takenSlots = (rows || []).map(function (r) { return r.appointment_time; });
-        renderSlots();
-      })
-      .catch(function () {
-        if (state.date !== dateStr) return;
-        state.takenSlots = [];
-        renderSlots();
-      });
-  }
-
-  function slotAvailable(label) {
-    if (state.takenSlots.indexOf(label) > -1) return false;
-    if (state.duration === 60) {
-      var next = minutesToLabel(slotMinutes(label) + 30);
-      if (BOOKING_TIME_SLOTS.indexOf(next) === -1 || state.takenSlots.indexOf(next) > -1) return false;
-    }
-    var now = clinicWallClock(new Date());
-    if (state.date === now.date && slotMinutes(label) < now.minutes + BOOKING_MIN_NOTICE_MINUTES) return false;
-    return true;
-  }
-
-  function renderSlots() {
-    var grid = document.getElementById('slot-grid');
-    if (!grid) return;
-    if (state.time && !slotAvailable(state.time)) state.time = null;
-
-    var anyAvailable = BOOKING_TIME_SLOTS.some(slotAvailable);
-    if (!anyAvailable) {
-      grid.innerHTML = '<p class="booking-slots-msg">No ' + (state.duration === 60 ? '1-hour' : '30-minute') + ' times left on this day — please choose another date' + (state.duration === 60 ? ' or a 30-minute session' : '') + '.</p>';
-      renderLocalTime();
-      return;
-    }
-
-    grid.innerHTML = BOOKING_TIME_SLOTS.map(function (t) {
-      var available = slotAvailable(t);
-      var selected = state.time === t;
-      return '<button type="button" class="booking-slot' + (selected ? ' selected' : '') + '" data-time="' + t + '"' +
-        (available ? '' : ' disabled aria-disabled="true"') + '>' + t + '</button>';
-    }).join('');
-
-    grid.querySelectorAll('.booking-slot:not(:disabled)').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        state.time = btn.getAttribute('data-time');
-        document.getElementById('booking-error-2').classList.remove('show');
-        renderSlots();
-      });
-    });
-    renderLocalTime();
-  }
-
-  function timeRange() {
-    return state.time + ' – ' + minutesToLabel(slotMinutes(state.time) + state.duration);
-  }
-
-  function localTimeText() {
-    if (!state.date || !state.time || visitorIsInClinicTz()) return '';
-    var start = clinicSlotToDate(state.date, state.time);
-    var local = start.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
-    return 'That\'s ' + local + ' where you are.';
-  }
-
-  function renderLocalTime() {
-    var el = document.getElementById('slot-local');
-    if (!el) return;
-    el.textContent = state.time
-      ? 'Selected: ' + timeRange() + ' ET. ' + localTimeText()
-      : '';
-  }
-
-  /* ---------- Step 3: Review + pay (or confirm, if complimentary) ---------- */
-  function renderStep3() {
-    setActiveStep(3);
-    var d = state.details;
-    var prettyDate = new Date(state.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-    var cents = prices[state.duration];
-    var isFree = cents === 0;
-    var local = localTimeText();
-
-    function row(label, value) {
-      return '<div class="bs-row"><span>' + label + '</span><strong>' + value + '</strong></div>';
-    }
-
-    panels.innerHTML =
-      '<p class="booking-eyebrow">Step 3 of 3</p>' +
-      '<h3 class="booking-title" id="booking-title">' + (isFree ? 'Confirm Your Booking' : 'Confirm &amp; Pay') + '</h3>' +
-      '<p class="booking-sub">' + (isFree
-        ? 'Please check your details. Your consultation is complimentary — no payment is needed.'
-        : 'Please check your details. Your visit is confirmed as soon as payment is received.') + '</p>' +
-      '<div class="booking-summary">' +
-        row('Name', escapeHtml(d.name)) +
-        row('Email', escapeHtml(d.email)) +
-        row('Phone', escapeHtml(d.phone)) +
-        row('Topic', escapeHtml(d.reason)) +
-        row('Date', escapeHtml(prettyDate)) +
-        row('Time', escapeHtml(timeRange()) + ' ET' + (local ? '<small>' + escapeHtml(local) + '</small>' : '')) +
-        row('Length', state.duration === 60 ? '1 hour' : '30 minutes') +
-        row('Format', 'Secure video call') +
-      '</div>' +
-      '<div class="booking-amount"><span>Consultation fee</span><span>' + (cents == null ? '—' : (isFree ? 'Free' : money(cents))) + '</span></div>' +
-      '<p class="booking-error" id="booking-error-3">Something went wrong. Please try again.</p>' +
-      '<div class="booking-actions">' +
-        '<button type="button" class="booking-back" id="step3-back">&larr; Back</button>' +
-        '<button type="button" class="btn btn-primary" id="pay-btn">' + (isFree ? 'Confirm Booking' : 'Continue to Secure Payment') + '</button>' +
-      '</div>' +
-      '<p class="booking-note">' + (isFree
-        ? 'You\'ll get a confirmation email with a calendar invite and your personal video link.'
-        : 'You\'ll be taken to Stripe\'s secure checkout. CliniPause never sees or stores your card number. You\'ll then get a confirmation email with a calendar invite and your personal video link.') + '</p>';
-
-    document.getElementById('step3-back').addEventListener('click', renderStep2);
-
-    document.getElementById('pay-btn').addEventListener('click', function () {
-      var payBtn = this;
-      var idleLabel = payBtn.textContent;
-      payBtn.disabled = true;
-      payBtn.textContent = isFree ? 'Confirming…' : 'Redirecting…';
-      document.getElementById('booking-error-3').classList.remove('show');
-
-      startCheckout({
-        kind: 'booking',
-        booking: {
-          fullName: d.name,
-          email: d.email,
-          phone: d.phone,
-          reason: d.reason,
-          date: state.date,
-          time: state.time,
-          duration: state.duration,
-          returnPath: window.location.pathname
-        }
-      }).then(function (data) {
-        window.location.href = data.url;
-      }).catch(function (err) {
-        payBtn.disabled = false;
-        payBtn.textContent = idleLabel;
-        var errEl = document.getElementById('booking-error-3');
-        errEl.textContent = err.message || 'Something went wrong. Please try again.';
-        errEl.classList.add('show');
-      });
-    });
-  }
-
-  // Deep link from emails ("Book a new time"): /?book=1 opens the modal.
-  var params = new URLSearchParams(window.location.search);
-  if (params.has('book')) {
-    open();
-    params.delete('book');
-    var qs = params.toString();
-    window.history.replaceState({}, '', window.location.pathname + (qs ? '?' + qs : ''));
-  }
 }
 
 function escapeHtml(str) {
@@ -1237,16 +744,6 @@ function initLiveChat() {
   var mode = localStorage.getItem(CONV_KEY) ? 'agent' : 'bot';
   var transcript = loadTranscript();
   var missCount = 0;
-  var prices = { 30: null, 60: null };
-
-  supabaseSelect('store_products', 'select=slug,price_cents&slug=in.(video-consultation,video-consultation-60)')
-    .then(function (rows) {
-      (rows || []).forEach(function (r) {
-        if (r.slug === 'video-consultation') prices[30] = r.price_cents;
-        if (r.slug === 'video-consultation-60') prices[60] = r.price_cents;
-      });
-    }).catch(function () {});
-
   function getToken() {
     var token = localStorage.getItem(TOKEN_KEY);
     if (!token) {
@@ -1277,7 +774,7 @@ function initLiveChat() {
 
   /* ---------- Knowledge base (from the site's own pages) ---------- */
   var LINKS = {
-    book: { label: 'Book a consultation', action: 'book' },
+    portal: { label: 'Visit the Wellness Portal', href: 'https://clinipausemd-member-web-ten.vercel.app/', external: true },
     track: { label: 'Track my order', href: 'track-order.html' },
     shop: { label: 'Visit the shop', href: 'shop.html' },
     services: { label: 'See all services', href: 'services.html' },
@@ -1286,12 +783,6 @@ function initLiveChat() {
     human: { label: 'Talk to a real person', action: 'human' }
   };
 
-  function consultPriceLine() {
-    var p30 = money(prices[30]), p60 = money(prices[60]);
-    if (p30 && p60) return 'A 30-minute video consultation is <strong>' + p30 + '</strong> and a 1-hour consultation is <strong>' + p60 + '</strong>.';
-    return 'We offer 30-minute and 1-hour video consultations. You\'ll see the current price when you pick a session length.';
-  }
-
   var INTENTS = [
     { id: 'emergency', words: ['emergency', 'chest pain', 'suicid', 'kill myself', 'overdose', 'can\'t breathe', 'cant breathe', 'heavy bleeding', 'stroke', 'faint'],
       reply: function () { return { html: 'If this is a medical emergency, please <strong>call 911</strong> (or your local emergency number) right away. This chat can\'t help with emergencies.<br><br>If you\'re in crisis, you can call or text <strong>988</strong> to reach the Suicide &amp; Crisis Lifeline.', links: ['human'] }; } },
@@ -1299,41 +790,38 @@ function initLiveChat() {
       reply: function () { return { html: 'Hi there! How can I help you today?', chips: true }; } },
     { id: 'thanks', words: ['thank', 'thanks', 'appreciate', 'great', 'perfect', 'awesome'],
       reply: function () { return { html: 'You\'re welcome! Is there anything else I can help with?', chips: true }; } },
-    { id: 'price', words: ['price', 'cost', 'how much', 'fee', 'charge', 'pay', 'expensive', 'afford', 'insurance'],
-      reply: function (t) {
-        var extra = /insurance/.test(t) ? '<br><br>For insurance questions, our team can advise on your specific plan.' : '';
-        return { html: consultPriceLine() + ' You pay securely by card when you book.' + extra, links: /insurance/.test(t) ? ['book', 'human'] : ['book'] };
-      } },
+    { id: 'price', words: ['price', 'cost', 'how much', 'fee', 'charge', 'expensive', 'afford', 'insurance'],
+      reply: function () { return { html: 'Product prices are shown on each item in our shop, and you pay securely by card at checkout. For anything else about cost, our team will be happy to help.', links: ['shop', 'human'] }; } },
+    { id: 'portal', words: ['portal', 'wellness portal', 'member', 'login', 'log in', 'sign in', 'account', 'get started', 'start'],
+      reply: function () { return { html: 'Our <strong>Wellness Portal</strong> is where your CliniPause wellness journey continues online. Open it to get started with personalized tools and support for perimenopause and menopause.', links: ['portal', 'human'] }; } },
     { id: 'book', words: ['book', 'appointment', 'schedule', 'consult', 'see a doctor', 'see the doctor', 'session', 'available', 'availability', 'slot', 'when can'],
-      reply: function () {
-        return { html: 'You can book a private video consultation with Dr. Ivanah Thomas online in a few steps: your details, then a 30-minute or 1-hour session and a time, then secure payment.<br><br>' + consultPriceLine() + '<br><br>Sessions run on weekdays, 9:00 AM to 4:00 PM Eastern Time. You\'ll get a confirmation email with your private video link and a calendar invite, plus a reminder 20 minutes before.', links: ['book'] };
-      } },
+      reply: function () { return { html: 'We\'re no longer taking consultation bookings through this website. The best place to start is our <strong>Wellness Portal</strong>, and our care team can answer any other questions here in the chat.', links: ['portal', 'human'] }; } },
     { id: 'reschedule', words: ['reschedule', 'cancel', 'change my appointment', 'move my appointment', 'refund', 'missed'],
       reply: function () { return { html: 'Our care team handles rescheduling, cancellations and refunds personally, so they can find the best option for you. Tap below and a team member will pick it up.', links: ['human'] }; } },
     { id: 'video', words: ['video', 'link', 'join', 'camera', 'microphone', 'zoom', 'call'],
-      reply: function () { return { html: 'Your private video link is in your booking confirmation email. The waiting room opens 10 minutes before your session, where you can test your camera and microphone. It works in any modern browser; nothing to install.<br><br>Can\'t find your link? A team member can resend it.', links: ['human'] }; } },
+      reply: function () { return { html: 'If you already have a consultation booked, your private video link is in your confirmation email. The waiting room opens 10 minutes before your session, where you can test your camera and microphone. It works in any modern browser; nothing to install.<br><br>Can\'t find your link? A team member can resend it.', links: ['human'] }; } },
     { id: 'track', words: ['track', 'order', 'shipping', 'shipped', 'deliver', 'package', 'where is my', 'tracking'],
       reply: function () { return { html: 'You can follow your order live on our <strong>Track Order</strong> page. Enter your order number (it looks like <strong>CP-10001</strong> and is in your confirmation email) and the email you ordered with.', links: ['track', 'human'] }; } },
     { id: 'shop', words: ['shop', 'product', 'supplement', 'buy', 'subscribe', 'subscription', 'store'],
       reply: function () { return { html: 'Our shop has CliniPause wellness products. You can buy once or subscribe monthly, and checkout is secure through Stripe. Every order gets an order number so you can track it.', links: ['shop', 'track'] }; } },
     { id: 'hormone', words: ['hormone', 'hrt', 'estrogen', 'progesterone', 'testosterone', 'bioidentical'],
-      reply: function () { return { html: 'We offer <strong>personalized hormone therapy</strong> support built around your symptoms, health history and goals. The right option is different for everyone, so it starts with a consultation.', links: ['book', 'services'] }; } },
+      reply: function () { return { html: 'We offer <strong>personalized hormone therapy</strong> support built around your symptoms, health history and goals. The right option is different for everyone, so it starts with a consultation.', links: ['portal', 'services'] }; } },
     { id: 'symptoms', words: ['hot flash', 'hot flush', 'night sweat', 'sleep', 'insomnia', 'mood', 'anxiety', 'brain fog', 'focus', 'memory', 'fatigue', 'tired', 'energy', 'weight', 'libido', 'dryness', 'irritab', 'symptom', 'period'],
-      reply: function () { return { html: 'Changes like hot flashes, poor sleep, mood shifts, brain fog, low energy and weight changes are very common during perimenopause and menopause, and there are effective ways to help.<br><br>CliniPause offers personalized support for each of these. I can\'t give medical advice in chat, but a consultation with Dr. Thomas is the best next step.', links: ['book', 'services'] }; } },
+      reply: function () { return { html: 'Changes like hot flashes, poor sleep, mood shifts, brain fog, low energy and weight changes are very common during perimenopause and menopause, and there are effective ways to help.<br><br>CliniPause offers personalized support for each of these. I can\'t give medical advice in chat, but a consultation with Dr. Thomas is the best next step.', links: ['portal', 'services'] }; } },
     { id: 'menopause', words: ['menopause', 'perimenopause', 'postmenopause', 'change of life'],
-      reply: function () { return { html: 'CliniPause specializes in <strong>perimenopause and menopause care</strong>: personalized, evidence-informed support for symptoms like hot flashes, sleep, mood, energy, brain fog, and weight and metabolic health.', links: ['book', 'programs'] }; } },
+      reply: function () { return { html: 'CliniPause specializes in <strong>perimenopause and menopause care</strong>: personalized, evidence-informed support for symptoms like hot flashes, sleep, mood, energy, brain fog, and weight and metabolic health.', links: ['portal', 'programs'] }; } },
     { id: 'services', words: ['service', 'offer', 'treatment', 'what do you do', 'help with', 'aesthetic', 'peptide', 'o-shot', 'oshot', 'rejuvenation', 'wellness', 'weight loss'],
-      reply: function () { return { html: 'Our services include:<ul><li>Hormone therapy</li><li>Perimenopause &amp; menopause care</li><li>Integrative wellness</li><li>Weight management</li><li>Peptides</li><li>Aesthetics</li><li>Vaginal rejuvenation &amp; O-Shot</li></ul>', links: ['services', 'book'] }; } },
+      reply: function () { return { html: 'Our services include:<ul><li>Hormone therapy</li><li>Perimenopause &amp; menopause care</li><li>Integrative wellness</li><li>Weight management</li><li>Peptides</li><li>Aesthetics</li><li>Vaginal rejuvenation &amp; O-Shot</li></ul>', links: ['services', 'portal'] }; } },
     { id: 'programs', words: ['program', 'cancer', 'oncology', 'survivor', 'thrive'],
-      reply: function () { return { html: 'We run three programs:<ul><li><strong>The Cancer Thrive Program</strong>: integrative oncology and survivorship support (nutrition, fatigue and sleep, supplement safety reviews, coaching). It complements, never replaces, your oncology care.</li><li><strong>Perimenopause &amp; Menopause Wellness</strong></li><li><strong>Hormone Wellness</strong></li></ul>', links: ['programs', 'book'] }; } },
+      reply: function () { return { html: 'We run three programs:<ul><li><strong>The Cancer Thrive Program</strong>: integrative oncology and survivorship support (nutrition, fatigue and sleep, supplement safety reviews, coaching). It complements, never replaces, your oncology care.</li><li><strong>Perimenopause &amp; Menopause Wellness</strong></li><li><strong>Hormone Wellness</strong></li></ul>', links: ['programs', 'portal'] }; } },
     { id: 'team', words: ['doctor', 'dr.', 'dr ', 'ivanah', 'thomas', 'who are you', 'team', 'provider', 'qualified', 'about'],
-      reply: function () { return { html: 'CliniPause was founded by <strong>Dr. Ivanah Thomas, MD</strong>, an Integrative Medicine Specialist and women\'s health advocate, and author of <em>The CliniPause Solution Handbook</em>. She works alongside an experienced team of clinicians.', links: ['about', 'book'] }; } },
+      reply: function () { return { html: 'CliniPause was founded by <strong>Dr. Ivanah Thomas, MD</strong>, an Integrative Medicine Specialist and women\'s health advocate, and author of <em>The CliniPause Solution Handbook</em>. She works alongside an experienced team of clinicians.', links: ['about', 'portal'] }; } },
     { id: 'hours', words: ['hours', 'open', 'when are you', 'time zone', 'timezone', 'weekend', 'saturday', 'sunday'],
-      reply: function () { return { html: 'Consultations run <strong>Monday to Friday, 9:00 AM to 4:00 PM Eastern Time</strong>. The booking calendar shows times in both clinic time and your own local time.', links: ['book'] }; } },
+      reply: function () { return { html: 'Our care team replies to chats as soon as they can. Leave a message and they\'ll pick it up, or email <a href="mailto:info@clinipause.com">info@clinipause.com</a>.', links: ['human'] }; } },
     { id: 'contact', words: ['contact', 'email', 'phone', 'call you', 'reach', 'speak to', 'address', 'location', 'where are you'],
       reply: function () { return { html: 'You can email us at <a href="mailto:info@clinipause.com">info@clinipause.com</a>, or talk to a team member right here.', links: ['human'] }; } },
     { id: 'privacy', words: ['privacy', 'private', 'secure', 'confidential', 'data', 'hipaa'],
-      reply: function () { return { html: 'Your privacy matters to us. Each video consultation uses its own private room and a personal link that only works for your booking, and payments are handled securely by Stripe. We never see your card details.', links: ['book'] }; } },
+      reply: function () { return { html: 'Your privacy matters to us. Payments are handled securely by Stripe, so we never see your card details, and your orders can only be looked up with your order number and email.', links: ['shop'] }; } },
     { id: 'human', words: ['human', 'real person', 'agent', 'someone', 'staff', 'representative', 'talk to', 'speak with', 'nurse', ' live '],
       reply: function () { return { html: 'Of course, I\'ll connect you with our care team.', handoff: true }; } }
   ];
@@ -1362,7 +850,7 @@ function initLiveChat() {
       return {
         html: missCount > 1
           ? 'I\'m still not sure I can answer that well. A member of our care team can help. Would you like me to connect you?'
-          : 'I\'m not sure I have the answer to that. I can help with booking, prices, our services and programs, order tracking, or connect you with a real person.',
+          : 'I\'m not sure I have the answer to that. I can help with our services and programs, shop products, order tracking, the Wellness Portal, or connect you with a real person.',
         links: ['human'], chips: missCount <= 1, missed: true
       };
     }
@@ -1415,13 +903,13 @@ function initLiveChat() {
       var l = LINKS[k];
       if (!l) return '';
       return l.href
-        ? '<a class="chat-action" href="' + l.href + '">' + l.label + '</a>'
+        ? '<a class="chat-action" href="' + l.href + '"' + (l.external ? ' target="_blank" rel="noopener"' : '') + '>' + l.label + '</a>'
         : '<button type="button" class="chat-action' + (k === 'human' ? ' human' : '') + '" data-chat-action="' + l.action + '">' + l.label + '</button>';
     }).join('') + '</div>';
   }
 
   function chipsHtml() {
-    var chips = ['How much is a consultation?', 'Book a consultation', 'Track my order', 'What services do you offer?'];
+    var chips = ['What is the Wellness Portal?', 'Track my order', 'What services do you offer?', 'I need help from a person'];
     return '<div class="chat-chips">' + chips.map(function (c) {
       return '<button type="button" class="chat-chip" data-chat-ask="' + escapeHtml(c) + '">' + escapeHtml(c) + '</button>';
     }).join('') + '</div>';
@@ -1437,7 +925,7 @@ function initLiveChat() {
   }
 
   function renderBot() {
-    var html = botRow('Hi! I\'m the CliniPause assistant. I can answer questions about consultations, prices, our services and your orders right away.' +
+    var html = botRow('Hi! I\'m the CliniPause assistant. I can answer questions about our services, programs, shop and your orders right away, and point you to our Wellness Portal.' +
       ' Or tap <strong>Talk to a real person</strong> any time.', transcript.length ? '' : chipsHtml());
     transcript.forEach(function (m) {
       html += m.from === 'bot' ? botRow(m.html || escapeHtml(m.text), linkButtons(m.links) + (m.chips ? chipsHtml() : '')) : visitorRow(m.text);
@@ -1480,7 +968,7 @@ function initLiveChat() {
   }
 
   /* ---------- Handoff to a real person ---------- */
-  var TOPIC_LABELS = { price: 'prices', book: 'booking a consultation', reschedule: 'rescheduling or cancelling', video: 'video call or link', track: 'order tracking',
+  var TOPIC_LABELS = { price: 'prices', book: 'consultation booking (no longer on the website)', portal: 'the Wellness Portal', reschedule: 'rescheduling or cancelling', video: 'video call or link', track: 'order tracking',
     shop: 'shop and products', hormone: 'hormone therapy', symptoms: 'symptoms', menopause: 'menopause care', services: 'services', programs: 'programs',
     team: 'the care team', hours: 'opening hours', contact: 'contact details', privacy: 'privacy', emergency: 'possible emergency (shown 911 guidance)' };
 
@@ -1654,10 +1142,6 @@ function initLiveChat() {
     var a = act.getAttribute('data-chat-action');
     if (a === 'human') showHandoffForm();
     else if (a === 'restart') resetToBot();
-    else if (a === 'book') {
-      var trigger = document.querySelector('[data-book-open]');
-      if (trigger) { close(); trigger.click(); } else { window.location.href = '/?book=1'; }
-    }
   });
 
   box.addEventListener('submit', function (e) {

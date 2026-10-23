@@ -246,9 +246,9 @@ async function sendPatientCancellation(b, opts) {
       (refunded
         ? paragraph('A full refund of <strong>' + esc(money(b.amount_cents)) + '</strong> has been issued to your original payment method. It usually appears within 5–10 business days.')
         : '') +
-      paragraph('We’d love to see you at another time — you can pick a new slot below, or reply to this email and we’ll help.'),
-    ctaLabel: 'Book a New Time',
-    ctaUrl: WEBSITE_URL + '/?book=1',
+      paragraph('We’re sorry for the inconvenience. Our Wellness Portal is the best place to continue, or reply to this email and we’ll help.'),
+    ctaLabel: 'Visit the Wellness Portal',
+    ctaUrl: 'https://clinipausemd-member-web-ten.vercel.app/',
     footerNote: PATIENT_FOOTER
   });
 
@@ -256,7 +256,7 @@ async function sendPatientCancellation(b, opts) {
     to: b.email,
     subject: 'Cancelled: your consultation on ' + t.day,
     html,
-    text: 'Your consultation on ' + t.day + ' at ' + t.range + ' has been cancelled.' + (refunded ? ' A full refund has been issued.' : '') + ' Book a new time: ' + WEBSITE_URL + '/?book=1',
+    text: 'Your consultation on ' + t.day + ' at ' + t.range + ' has been cancelled.' + (refunded ? ' A full refund has been issued.' : '') + ' Visit the Wellness Portal: https://clinipausemd-member-web-ten.vercel.app/',
     attachments: [icsAttachment(b, { cancelled: true })]
   });
 }

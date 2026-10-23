@@ -1,16 +1,13 @@
 // POST /api/create-checkout-session
-// Body: { kind: 'booking' | 'order', site: 'clinipausemd' | 'drivanah', ...fields }
+// Body: { kind: 'order', site: 'clinipausemd' | 'drivanah', order: { items: [...] } }
 //
-// This is the only place a booking/order row gets created, and the only
-// place that talks to Stripe. Amounts always come from the database —
-// consultation prices from the "video-consultation" (30 min) and
-// "video-consultation-60" (60 min) products, looked up inside
-// create_consultation_booking — never from the client, so nobody can pay a
-// different amount than what they're actually being charged.
+// Creates a Stripe Checkout session for shop orders. Prices always come from
+// the database, never from the client, so nobody can pay a different amount
+// than what they are actually being charged. (Consultation booking was removed
+// from the website; kind 'booking' now answers 410.)
 
 const Stripe = require('stripe');
-const { callRpc, select } = require('./_supabase');
-const { handleConfirmedBooking } = require('./_consultations');
+const { select } = require('./_supabase');
 
 const ALLOWED_SITES = ['clinipausemd', 'drivanah'];
 
@@ -53,58 +50,12 @@ module.exports = async (req, res) => {
     : 'https://www.clinipausemd.com';
 
   try {
+    // Consultation booking has been removed from the website (the practice
+    // can't staff every state's licensing), so no new bookings are accepted.
+    // Existing bookings are still honoured by the webhook, reminders and
+    // video-room code, which don't go through this endpoint.
     if (kind === 'booking') {
-      const b = body.booking || {};
-      const duration = Number(b.duration) === 60 ? 60 : 30;
-      const returnUrl = safeOrigin + safeReturnPath(b.returnPath);
-
-      const booking = await callRpc('create_consultation_booking', {
-        p_site: site,
-        p_full_name: b.fullName,
-        p_email: b.email,
-        p_phone: b.phone,
-        p_reason: b.reason || null,
-        p_appointment_date: b.date,
-        p_appointment_time: b.time,
-        p_duration_minutes: duration
-      });
-
-      // Complimentary session: nothing to charge, so confirm it server-side
-      // (the database re-checks that its stored price really is $0.00) and
-      // send the confirmation straight away.
-      if (booking.amount_cents === 0) {
-        await callRpc('confirm_free_booking', {
-          p_booking_id: booking.id,
-          p_webhook_secret: process.env.STOREFRONT_WEBHOOK_SECRET
-        });
-        await handleConfirmedBooking(booking.id);
-        res.status(200).json({ url: returnUrl + '?booked=1&booking=' + encodeURIComponent(booking.id) });
-        return;
-      }
-
-      const session = await stripe.checkout.sessions.create({
-        mode: 'payment',
-        payment_method_types: ['card'],
-        customer_email: b.email,
-        expires_at: Math.floor(Date.now() / 1000) + CHECKOUT_EXPIRY_SECONDS,
-        line_items: [{
-          price_data: {
-            currency: 'usd',
-            unit_amount: booking.amount_cents,
-            product_data: {
-              name: 'CliniPause Video Consultation (' + duration + ' minutes)',
-              description: b.date + ' at ' + b.time + ' Eastern Time with Dr. Ivanah Thomas'
-            }
-          },
-          quantity: 1
-        }],
-        metadata: { kind: 'booking', record_id: booking.id, site },
-        payment_intent_data: { metadata: { source: 'website', kind: 'booking', record_id: booking.id } },
-        success_url: returnUrl + '?booked=1&booking=' + encodeURIComponent(booking.id),
-        cancel_url: returnUrl + '?canceled=1'
-      });
-
-      res.status(200).json({ url: session.url });
+      res.status(410).json({ error: 'Consultation booking is no longer available on this website.' });
       return;
     }
 
